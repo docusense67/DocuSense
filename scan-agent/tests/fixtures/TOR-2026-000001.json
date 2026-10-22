@@ -1,0 +1,51 @@
+{
+  "pages": 1,
+  "data_hash": "9f1a9ad6e5f2f94f8fbe510f907e793350ab0b63ab5413f493de2428caa5b5f8",
+  "qr_token": "snjCiRnRNuI6VgGgg-rY5xAOsJrYiU2e",
+  "snapshot": {
+    "student_name": "MARIA R. SANTOS",
+    "student_number": "2025-00001",
+    "program": "Bachelor of Science in Information Technology",
+    "date_issued": "October 5, 2026",
+    "gwa": "1.44",
+    "terms": [
+      {
+        "academic_year": "2025-2026",
+        "semester": "1st Semester",
+        "gwa": "1.44",
+        "subjects": [
+          {
+            "subject_code": "GE101",
+            "subject_title": "Understanding the Self",
+            "units": "3",
+            "grade": "1.75",
+            "remarks": "Passed"
+          },
+          {
+            "subject_code": "GE102",
+            "subject_title": "Purposive Communication",
+            "units": "3",
+            "grade": "1.25",
+            "remarks": "Passed"
+          },
+          {
+            "subject_code": "IT101",
+            "subject_title": "Introduction to Computing",
+            "units": "3",
+            "grade": "1.25",
+            "remarks": "Passed"
+          },
+          {
+            "subject_code": "IT102",
+            "subject_title": "Computer Programming 1",
+            "units": "3",
+            "grade": "1.50",
+            "remarks": "Passed"
+          }
+        ]
+      }
+    ],
+    "document_type": "TOR",
+    "document_number": "TOR-2026-000001"
+  }
+}

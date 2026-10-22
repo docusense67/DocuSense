@@ -1,0 +1,55 @@
+@startuml use-cases-admin
+' Use cases: administration and audit. Detail of the "admin" package in use-cases.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: administration and audit
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Registrar" as Registrar
+actor "Administrator" as Admin
+
+rectangle "DocuSense" {
+  package "Administration & audit" {
+    usecase "Create staff logins\n(registrar, administrator;\nvalidation permission)" as D_STAFF
+    ' @routes D_STAFF: POST /api/users
+    usecase "Manage document templates\n(upload, preview, activate)" as D_TEMPLATES
+    ' @routes D_TEMPLATES: GET /api/document-types | GET /api/templates | POST /api/templates | GET /api/templates/{template_id} | PATCH /api/templates/{template_id} | POST /api/templates/{template_id}/preview | POST /api/templates/{template_id}/activate
+    usecase "Register or deactivate\nstations (issues station key)" as D_STATIONS
+    ' @routes D_STATIONS: GET /api/stations | POST /api/stations | POST /api/stations/{station_id}/deactivate
+    usecase "Set screening thresholds" as D_THRESHOLDS
+    ' @routes D_THRESHOLDS: GET /api/intake/settings | PUT /api/intake/settings
+    usecase "Search the audit trail" as D_AUDIT
+    ' @routes D_AUDIT: GET /api/audit-logs
+    usecase "View the registrar dashboard" as D_DASHBOARD
+    ' @routes D_DASHBOARD: GET /api/dashboard/registrar
+  }
+}
+
+Registrar -- D_TEMPLATES
+Registrar -- D_AUDIT
+Registrar -- D_DASHBOARD
+Admin -- D_STAFF
+Admin -- D_STATIONS
+Admin -- D_THRESHOLDS
+Admin -- D_AUDIT
+Admin -- D_DASHBOARD
+
+note "Templates belong to the registrar, not the administrator.\nEvery action that changes or checks an official record\nwrites an append-only audit entry.\nA daily job (scheduler secret, no user) expires download\nwindows and purges idle sessions." as N1
+@enduml

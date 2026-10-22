@@ -1,0 +1,89 @@
+@startuml use-cases
+' Use case overview: who works with which part of DocuSense (direct links only; specialised
+' actors also inherit their parent's links). Each package has its own detail
+' diagram (use-cases-<package alias>.puml) with the individual use cases and API routes.
+' backend/tests/test_use_case_diagram.py checks that every actor-package link here matches the
+' actor links in the detail diagram, and those against backend/tests/test_access_matrix.py.
+title DocuSense use case overview
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam package {
+  BorderColor #2F5D8A
+  BackgroundColor #FBFCFE
+}
+
+actor "Student" as Student
+actor "Teacher" as Teacher
+actor "Class adviser" as Adviser
+actor "Registrar" as Registrar
+actor "Validation operator\n(registrar with\nvalidation permission)" as Operator
+actor "Administrator" as Admin
+actor "Scan station\n(outgoing validation)" as ScanStation <<system>>
+actor "Intake station\n(camera + feeder\n+ two trays)" as IntakeStation <<system>>
+
+Adviser -up-|> Teacher
+Operator -up-|> Registrar
+
+rectangle "DocuSense" {
+  package "Accounts & access" as accounts {
+    usecase "Log in, change password" as O_A1
+    usecase "Manage user accounts" as O_A2
+  }
+  package "Academic records" as records {
+    usecase "Encode and submit grades" as O_R1
+    usecase "Maintain students, terms,\nsections, advisers" as O_R2
+    usecase "View own or advisory records" as O_R3
+  }
+  package "Outgoing document requests" as requests {
+    usecase "Request -> approve -> generate\n-> verify -> release -> download" as O_C1
+  }
+  package "Validation of printed documents" as validation {
+    usecase "Scan and compare with\nofficial records" as O_V1
+    usecase "Review results" as O_V2
+  }
+  package "Incoming-document screening" as intake {
+    usecase "Capture, screen,\nTray 1 / Tray 2" as O_I1
+    usecase "Review queue, student data,\nlink or create profile" as O_I2
+    usecase "Operator intake console" as O_I3
+  }
+  package "Administration & audit" as admin {
+    usecase "Staff logins, templates,\nstations, thresholds" as O_D1
+    usecase "Audit trail, dashboard" as O_D2
+  }
+}
+
+Student -- records
+Student -- requests
+Teacher -- records
+Adviser -- records
+Registrar -- accounts
+Registrar -- records
+Registrar -- requests
+Registrar -- intake
+Registrar -- admin
+Operator -- validation
+Operator -- intake
+Admin -- accounts
+Admin -- intake
+Admin -- admin
+validation -- ScanStation
+intake -- IntakeStation
+
+note as N1
+  Every signed-in user (student, teacher,
+  registrar, administrator) logs in, changes
+  their password and browses the catalog.
+  A class adviser is a teacher; a validation
+  operator is a registrar, so each also has
+  the parent's use cases.
+end note
+@enduml

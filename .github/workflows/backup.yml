@@ -1,0 +1,120 @@
+# Nightly encrypted backup of the cloud database (and Storage files when the key is set), kept
+# 30 days as workflow artifacts, then restored into a throwaway PostgreSQL to prove it works
+# (Section 18: daily backup, 30 days kept, one copy off the database host, restore tested).
+# Scripts: deploy/cloud/backup.sh and verify-backup.sh. Setup: docs/cloud-deployment.md.
+name: Backup (cloud)
+
+on:
+  schedule:
+    # 02:00 Asia/Manila (UTC+8, no daylight saving) = 18:00 UTC the day before.
+    # GitHub starts scheduled runs late (sometimes by much more than an hour) when busy.
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: backup-cloud
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Supabase's PostgreSQL major version. pg_dump must match it; also change the service image
+  # below. backup.sh stops with a clear message when Supabase upgrades.
+  PG_MAJOR: "17"
+  SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://xbirhmmdctcqniwbbccy.supabase.co' }}
+
+jobs:
+  configured:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          OWNER_URL: ${{ secrets.SUPABASE_DB_OWNER_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -n "$OWNER_URL" ] && [ -n "$PASSPHRASE" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Backup skipped: set SUPABASE_DB_OWNER_URL and BACKUP_PASSPHRASE (docs/cloud-deployment.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  backup:
+    needs: configured
+    if: needs.configured.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      name: ${{ steps.backup.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PostgreSQL ${{ env.PG_MAJOR }} client tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq "postgresql-client-$PG_MAJOR"
+          echo "/usr/lib/postgresql/$PG_MAJOR/bin" >> "$GITHUB_PATH"
+
+      - name: Encrypted backup
+        id: backup
+        env:
+          SUPABASE_DB_OWNER_URL: ${{ secrets.SUPABASE_DB_OWNER_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          bash deploy/cloud/backup.sh backups
+          if [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::warning::SUPABASE_SERVICE_KEY is not set: issued PDFs and scans are not backed up."
+          fi
+          echo "name=$(ls backups)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adgvs-backup-${{ steps.backup.outputs.name }}
+          path: backups/
+          retention-days: 30
+          compression-level: 0  # already compressed and encrypted
+          if-no-files-found: error
+
+  restore-check:
+    needs: backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17  # = PG_MAJOR
+        env:
+          POSTGRES_PASSWORD: restore-check  # throwaway server, only reachable from this job
+          POSTGRES_DB: restore_check
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PostgreSQL ${{ env.PG_MAJOR }} client tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq "postgresql-client-$PG_MAJOR"
+          echo "/usr/lib/postgresql/$PG_MAJOR/bin" >> "$GITHUB_PATH"
+
+      # The uploaded artifact itself is restored, not a local copy.
+      - uses: actions/download-artifact@v4
+        with:
+          name: adgvs-backup-${{ needs.backup.outputs.name }}
+          path: backups/
+
+      - name: Restore into a scratch database and compare with the live one
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          SUPABASE_DB_OWNER_URL: ${{ secrets.SUPABASE_DB_OWNER_URL }}
+          RESTORE_URL: postgresql://postgres:restore-check@localhost:5432/restore_check
+          BACKUP_NAME: ${{ needs.backup.outputs.name }}
+        run: bash deploy/cloud/verify-backup.sh "backups/$BACKUP_NAME"

@@ -1,0 +1,31 @@
+# Keeps the free Render API awake during office hours, so the first user of the day does not
+# wait about a minute for a cold start. Render Free sleeps after 15 minutes without traffic.
+#
+# Office hours: Monday-Friday 07:00-18:00 Asia/Manila (UTC+8, no daylight saving)
+#             = Sunday-Thursday 23:00-23:59 UTC  +  Monday-Friday 00:00-10:00 UTC.
+# GitHub's schedule is best effort: runs can start late or be dropped when GitHub is busy, so
+# an occasional cold start can still happen. In a repository with no activity for 60 days
+# GitHub disables scheduled workflows. On a private repository every run is billed as one
+# Actions minute (about 1,500 a month here, of 2,000 free); public repositories are free.
+# Turn it off with the repository variable KEEP_WARM=off.
+name: Keep API warm
+
+on:
+  schedule:
+    - cron: "*/10 23 * * 0-4"  # 07:00-07:50 Manila, Mon-Fri
+    - cron: "*/10 0-9 * * 1-5"  # 08:00-17:50 Manila, Mon-Fri
+    - cron: "0 10 * * 1-5"  # 18:00 Manila, Mon-Fri
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    if: vars.KEEP_WARM != 'off'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      API_URL: ${{ vars.API_URL || 'https://adgvs-api.onrender.com' }}
+    steps:
+      - name: GET /api/health
+        run: curl -fsS --max-time 120 --retry 3 --retry-delay 10 "$API_URL/api/health"

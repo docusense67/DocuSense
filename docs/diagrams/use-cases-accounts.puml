@@ -1,0 +1,59 @@
+@startuml use-cases-accounts
+' Use cases: accounts and access. Detail of the "accounts" package in use-cases.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: accounts and access
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Signed-in user" as AnyUser
+actor "Student" as Student
+actor "Teacher" as Teacher
+actor "Registrar" as Registrar
+actor "Administrator" as Admin
+
+Student -up-|> AnyUser
+Teacher -up-|> AnyUser
+Registrar -up-|> AnyUser
+Admin -up-|> AnyUser
+
+rectangle "DocuSense" {
+  package "Accounts & access" {
+    usecase "Log in\n(session, own account)" as A_LOGIN
+    ' @routes A_LOGIN: POST /api/auth/login | GET /api/auth/me
+    usecase "Change own password" as A_PASSWORD
+    ' @routes A_PASSWORD: POST /api/auth/change-password
+    usecase "Log out" as A_LOGOUT
+    ' @routes A_LOGOUT: POST /api/auth/logout
+    usecase "Manage user accounts\n(list, reset password, deactivate)" as A_MANAGE
+    ' @routes A_MANAGE: GET /api/users | POST /api/users/{user_id}/reset-password | POST /api/users/{user_id}/deactivate
+    usecase "Create a student's login\nfrom the student record" as A_STUDENT_LOGIN
+    ' @routes A_STUDENT_LOGIN: POST /api/students/{student_id}/account
+  }
+}
+
+AnyUser -- A_LOGIN
+AnyUser -- A_PASSWORD
+AnyUser -- A_LOGOUT
+Registrar -- A_MANAGE
+Registrar -- A_STUDENT_LOGIN
+Admin -- A_MANAGE
+
+note "Registrars manage student and teacher accounts;\nadministrators manage every account.\nTeacher logins are created with the teacher\n(Academic records), staff logins under\nAdministration. A temporary password\nmust be changed at first login." as N1
+@enduml

@@ -1,0 +1,80 @@
+@startuml use-cases-requests
+' Use cases: outgoing document requests (request -> approve -> generate -> verify -> release ->
+' download). Detail of the "requests" package in use-cases.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: outgoing document requests
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Student" as Student
+actor "Registrar" as Registrar
+
+rectangle "DocuSense" {
+  package "Outgoing document requests" {
+    usecase "Request a document\n(TOR, COE, COG, ...)" as C_REQUEST
+    ' @routes C_REQUEST: POST /api/requests | GET /api/requests | GET /api/requests/{request_id}
+    usecase "Check eligibility" as C_ELIGIBLE
+    ' @routes C_ELIGIBLE: GET /api/requests/eligibility
+    usecase "Cancel a request" as C_CANCEL
+    ' @routes C_CANCEL: POST /api/requests/{request_id}/cancel
+    usecase "Confirm payment" as C_PAY
+    ' @routes C_PAY: POST /api/requests/{request_id}/confirm-payment
+    usecase "Approve request" as C_APPROVE
+    ' @routes C_APPROVE: POST /api/requests/{request_id}/approve
+    usecase "Reject request\n(reason required)" as C_REJECT
+    ' @routes C_REJECT: POST /api/requests/{request_id}/reject
+    usecase "Generate document\n(snapshot, document number, QR)" as C_GENERATE
+    usecase "Verify generated document\n(side by side with records)" as C_VERIFY
+    ' @routes C_VERIFY: POST /api/requests/{request_id}/verify | GET /api/documents/{document_id} | POST /api/documents/{document_id}/download-link | GET /api/files/{token}
+    usecase "Send back for regeneration\n(new document number, reason)" as C_REGEN
+    ' @routes C_REGEN: POST /api/requests/{request_id}/regenerate
+    usecase "Release document" as C_RELEASE
+    ' @routes C_RELEASE: POST /api/requests/{request_id}/release
+    usecase "Download released document" as C_DOWNLOAD
+    ' @routes C_DOWNLOAD: POST /api/documents/{document_id}/download-link | GET /api/files/{token}
+    usecase "Re-open download access\n(reason required)" as C_REOPEN
+    ' @routes C_REOPEN: POST /api/documents/{document_id}/reopen-download
+    usecase "Revoke document\n(reason required)" as C_REVOKE
+    ' @routes C_REVOKE: POST /api/documents/{document_id}/revoke
+  }
+}
+
+Student -- C_REQUEST
+Student -- C_ELIGIBLE
+Student -- C_CANCEL
+Student -- C_DOWNLOAD
+
+Registrar -- C_REQUEST
+Registrar -- C_CANCEL
+Registrar -- C_PAY
+Registrar -- C_APPROVE
+Registrar -- C_REJECT
+Registrar -- C_VERIFY
+Registrar -- C_RELEASE
+Registrar -- C_REOPEN
+Registrar -- C_REVOKE
+
+C_REQUEST ..> C_ELIGIBLE : <<include>>
+C_APPROVE ..> C_GENERATE : <<include>>
+C_VERIFY <.. C_REGEN : <<extend>>
+C_REGEN ..> C_GENERATE : <<include>>
+
+note "Registrar may file a request for a student.\nOne open request per student and document type.\nVerified documents are released at once\nunless the school releases manually." as N1
+@enduml

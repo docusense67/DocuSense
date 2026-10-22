@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Certificate of Enrollment {{ document_number }}</title>
+<style>
+  /* Stand-in layout until the school's official COE arrives. Fixed mm positions; see
+     the OCR zones in defaults.py (page_x = 20 + x, page_y = 18 + y). */
+  * { box-sizing: border-box; }
+  body { margin: 0; color: #000; font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+         font-size: 10pt; }
+  .head { position: relative; height: 84mm; }
+  .school { position: absolute; left: 0; top: 0; width: 140mm; text-align: center; }
+  .school .name { font-size: 14pt; font-weight: bold; }
+  .school .addr { font-size: 9pt; margin-top: 1mm; }
+  .title { position: absolute; left: 0; top: 17mm; width: 140mm; text-align: center;
+           font-size: 13pt; font-weight: bold; letter-spacing: 0.5pt; }
+  .qr { position: absolute; right: 0; top: 0; width: 26mm; height: 26mm; }
+  .id { position: absolute; left: 0; top: 30mm; width: 170mm; height: 49.5mm;
+        border: 0.3mm solid #000; }
+  .row { position: absolute; left: 0; width: 170mm; height: 5.5mm; line-height: 5.5mm; }
+  .row .k { position: absolute; left: 2mm; width: 33mm; font-weight: bold; }
+  .row .v { position: absolute; left: 36mm; width: 132mm; white-space: nowrap; }
+  .body { font-size: 11pt; line-height: 1.6; text-align: justify; }
+  .sign { margin-top: 18mm; }
+  .sign .who { margin-top: 12mm; font-weight: bold; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="school">
+      <div class="name">{{ institution_name }}</div>
+      <div class="addr">{{ institution_address }}</div>
+      <div class="addr">Office of the University Registrar</div>
+    </div>
+    <div class="title">CERTIFICATE OF ENROLLMENT</div>
+    <img class="qr" src="{{ qr_code }}" alt="Verification QR code">
+    <div class="id">
+      <div class="row" style="top: 0mm"><span class="k">Name</span><span class="v">{{ student_name }}</span></div>
+      <div class="row" style="top: 5.5mm"><span class="k">Student No.</span><span class="v">{{ student_number }}</span></div>
+      <div class="row" style="top: 11mm"><span class="k">Program</span><span class="v">{{ program }}</span></div>
+      <div class="row" style="top: 16.5mm"><span class="k">Year Level</span><span class="v">{{ year_level }}</span></div>
+      <div class="row" style="top: 22mm"><span class="k">Semester</span><span class="v">{{ semester }}</span></div>
+      <div class="row" style="top: 27.5mm"><span class="k">Academic Year</span><span class="v">{{ academic_year }}</span></div>
+      <div class="row" style="top: 33mm"><span class="k">Document No.</span><span class="v">{{ document_number }}</span></div>
+      <div class="row" style="top: 38.5mm"><span class="k">Date Issued</span><span class="v">{{ date_issued }}</span></div>
+      <div class="row" style="top: 44mm"><span class="k">Purpose</span><span class="v">{{ purpose }}</span></div>
+    </div>
+  </div>
+
+  <p class="body">
+    This is to certify that <strong>{{ student_name }}</strong>, with student number
+    {{ student_number }}, is officially enrolled as a {{ year_level }} student in the
+    {{ program }} program for the {{ semester }} of Academic Year {{ academic_year }}.
+  </p>
+  <p class="body">
+    This certification is issued on {{ date_issued }} upon the request of the student
+    for {{ purpose }} purposes.
+  </p>
+
+  <div class="sign">
+    <div class="who">{{ registrar_name }}</div>
+    <div>{{ registrar_title }}</div>
+  </div>
+</body>
+</html>

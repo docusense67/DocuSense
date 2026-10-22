@@ -1,0 +1,83 @@
+# ADGVS scan station agent (Raspberry Pi 5, Raspberry Pi OS Trixie).
+# Installed by deploy/station/pi-setup.sh to /etc/systemd/system/adgvs-station.service.
+#
+# Feeds the ADF scanner through SANE when the operator opens a Single/Bulk session, spools
+# each complete stack into $ADGVS_SCAN_FOLDER and uploads it (scan_agent/station.py +
+# watch.py). Files are deleted only after the upload succeeded (--delete-after-upload).
+# Reports Ready / Scanning / Jam / Double feed / Offline to the dashboard every 15 s.
+#
+#   sudo systemctl status adgvs-station      journalctl -u adgvs-station -f
+#
+# Settings: /etc/adgvs/station.env (root-only, mode 600): ADGVS_SERVER, ADGVS_STATION_KEY,
+# ADGVS_CA_CERT (optional), ADGVS_SCAN_FOLDER, TESSERACT_CMD, ADGVS_SANE_DEVICE and
+# ADGVS_SANE_OPTIONS (optional). A scan folder outside /var/lib/adgvs needs a drop-in
+# (systemctl edit adgvs-station) adding ReadWritePaths=<folder>.
+#
+# Camera station: `pi-setup.sh --camera` adds the drop-in adgvs-station.service.d/camera.conf
+# (group video; /dev/video*, /dev/media*, /dev/dma_heap/* for libcamera). The feeder +
+# camera + two-tray gate station runs as adgvs-intake.service instead (pi-setup.sh
+# --intake, which disables this unit); check the camera with `python -m scan_agent
+# camera-test`.
+
+[Unit]
+Description=ADGVS scan station agent (scanner -> OCR -> upload)
+Documentation=file:///opt/adgvs/scan-agent/README.md
+Wants=network-online.target time-sync.target
+After=network-online.target time-sync.target
+# Never give up restarting (the default burst limit would stop it after 5 quick failures).
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=adgvs-agent
+Group=adgvs-agent
+# USB scanners: Debian's libsane udev rules grant the `scanner` group access.
+SupplementaryGroups=scanner
+Environment=ADGVS_SCAN_FOLDER=/var/lib/adgvs/scans
+Environment=TESSERACT_CMD=/usr/bin/tesseract
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile=/etc/adgvs/station.env
+ExecStart=/opt/adgvs/venv/bin/python -m scan_agent --source sane --watch --delete-after-upload
+# SIGTERM -> the agent reports "Offline: station software stopped" before exiting.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+Restart=always
+RestartSec=5
+
+# ---- hardening ------------------------------------------------------------------------
+NoNewPrivileges=yes
+ProtectSystem=strict
+StateDirectory=adgvs
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/adgvs
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+CapabilityBoundingSet=
+AmbientCapabilities=
+# Scanner access: libusb opens /dev/bus/usb/* (char-usb_device). PrivateDevices=yes would
+# hide it, so instead allow only USB devices on top of the standard pseudo-devices.
+# A scanner on another bus (SCSI generic) needs: DeviceAllow=char-sg rw
+PrivateDevices=no
+DevicePolicy=closed
+DeviceAllow=char-usb_device rw
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+# AF_NETLINK: libusb/udev hotplug events; AF_INET*: the server and network (eSCL) scanners.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,84 @@
+# ADGVS intake station (Raspberry Pi 5, Raspberry Pi OS Trixie): feeder -> camera compartment
+# -> screening -> backend decision -> routing gate -> Tray 1 (passed screening) / Tray 2
+# (needs manual review). Installed and enabled by `pi-setup.sh --intake`, which disables the
+# SANE validation station (adgvs-station.service); `pi-setup.sh --no-intake` switches back.
+#
+#   python -m scan_agent intake (scan_agent/intake.py), hardware from ADGVS_INTAKE_HARDWARE
+#   (gpio here; `manual` is interactive and only for bring-up in a terminal).
+#
+#   sudo systemctl status adgvs-intake      journalctl -u adgvs-intake -f
+#
+# Settings: /etc/adgvs/station.env (root-only): ADGVS_SERVER (the Render URL, not the Vercel
+# site), ADGVS_STATION_KEY, ADGVS_CAMERA_*, ADGVS_FEEDER_*, ADGVS_GATE_*, ADGVS_INTAKE_*.
+# Check them without moving anything: python -m scan_agent intake --check.
+# Invalid settings exit with status 2 and are not restarted in a loop (fix, then restart).
+# A jam stops the station until it is cleared and the service restarted; a sheet held while
+# the server was unreachable resumes once it was taken out of the compartment.
+
+[Unit]
+Description=ADGVS intake station (feeder -> camera -> screening -> two-tray gate)
+Documentation=file:///opt/adgvs/scan-agent/README.md
+Wants=network-online.target time-sync.target
+After=network-online.target time-sync.target
+Conflicts=adgvs-station.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=adgvs-agent
+Group=adgvs-agent
+# video: libcamera (Picamera2); gpio: /dev/gpiochip* (gpiozero + lgpio on the Pi 5).
+SupplementaryGroups=video gpio
+Environment=ADGVS_INTAKE_HARDWARE=gpio
+Environment=TESSERACT_CMD=/usr/bin/tesseract
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+# lgpio writes its notification pipes into the working directory (LG_WD): keep them in the
+# writable state directory (the rest of the file system is read-only for this service).
+Environment=LG_WD=/var/lib/adgvs
+WorkingDirectory=/var/lib/adgvs
+EnvironmentFile=/etc/adgvs/station.env
+ExecStart=/opt/adgvs/venv/bin/python -m scan_agent intake
+# SIGTERM -> the agent reports "Offline: station software stopped"; motors are switched off
+# and the gate released when the process exits.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+Restart=always
+RestartSec=5
+RestartPreventExitStatus=2
+
+# ---- hardening ------------------------------------------------------------------------
+NoNewPrivileges=yes
+ProtectSystem=strict
+StateDirectory=adgvs
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/adgvs
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateDevices=no
+DevicePolicy=closed
+DeviceAllow=char-gpiochip rw
+DeviceAllow=char-video4linux rw
+DeviceAllow=char-media rw
+DeviceAllow=char-dma_heap rw
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,62 @@
+@startuml use-cases-intake
+' Use cases: incoming-document screening, station side (camera + feeder + two-tray intake
+' station and its operator console, docs/intake/screening-contract.md). Detail of the "intake"
+' package in use-cases.puml; the staff review side is use-cases-intake-review.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: incoming-document screening (station and operator)
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Validation operator\n(registrar with\nvalidation permission)" as Operator
+actor "Intake station\n(camera + feeder\n+ two trays)" as IntakeStation <<system>>
+
+rectangle "DocuSense" {
+  package "Incoming-document screening" {
+    usecase "Start or end\nan intake batch" as I_BATCH
+    ' @routes I_BATCH: POST /api/station/intake/batches | POST /api/station/intake/batches/{batch_id}/end
+    usecase "Submit page for screening\n(type, indicators, fields)" as I_SUBMIT
+    ' @routes I_SUBMIT: POST /api/station/intake/documents
+    usecase "Capture page and\ncheck image quality\n(recapture up to 3 times)" as I_CAPTURE
+    usecase "Decide tray:\npassed screening -> Tray 1\nneeds manual review -> Tray 2" as I_DECIDE
+    usecase "Route page and report the tray\n(mismatch or jam -> manual review)" as I_ROUTE
+    ' @routes I_ROUTE: POST /api/station/intake/documents/{intake_id}/routed
+    usecase "Report station status" as I_STATUS
+    ' @routes I_STATUS: POST /api/station/status
+    usecase "Watch the operator console\n(status, batch, tray per page;\nno field values or images)" as I_CONSOLE
+    ' @routes I_CONSOLE: GET /api/intake-station/stations | GET /api/intake-station/stations/{station_id}/live | GET /api/intake-station/stations/{station_id}/batches | GET /api/intake-station/batches/{batch_id}
+    usecase "End the running batch" as I_END
+    ' @routes I_END: POST /api/intake-station/batches/{batch_id}/end
+  }
+}
+
+Operator -- I_CONSOLE
+
+IntakeStation -- I_BATCH
+IntakeStation -- I_SUBMIT
+IntakeStation -- I_CAPTURE
+IntakeStation -- I_ROUTE
+IntakeStation -- I_STATUS
+
+I_SUBMIT ..> I_CAPTURE : <<include>>
+I_SUBMIT ..> I_DECIDE : <<include>>
+I_CONSOLE <.. I_END : <<extend>>
+
+note "The station only measures; the backend alone\ndecides passed screening / needs manual review\nand the tray. Thresholds: Administration." as N1
+@enduml

@@ -1,0 +1,267 @@
+{
+ "schema": 1,
+ "doc_type": "good_moral_certificate",
+ "variant": "school_letter",
+ "description": "v1 bootstrapped from the synthetic layout (an approximation of the real form). Re-tune with client samples: see profiles/README.md.",
+ "page_mm": [
+  210.0,
+  297.0
+ ],
+ "tolerance_mm": 6.0,
+ "keywords": [
+  {
+   "text": "GOOD MORAL CHARACTER",
+   "weight": 4,
+   "zone": [
+    0.05,
+    0.12,
+    0.9,
+    0.2
+   ]
+  },
+  {
+   "text": "TO WHOM IT MAY CONCERN",
+   "weight": 1
+  },
+  {
+   "text": "This is to certify that",
+   "weight": 1
+  },
+  {
+   "text": "disciplinary action",
+   "weight": 1
+  },
+  {
+   "text": "certification is issued upon the request",
+   "weight": 1
+  },
+  {
+   "text": "School Principal",
+   "weight": 0.5
+  },
+  {
+   "text": "Department of Education",
+   "weight": 0.5
+  }
+ ],
+ "headings": [
+  {
+   "id": "republic",
+   "text": "Republic of the Philippines",
+   "zone": [
+    0.4029,
+    0.0389,
+    0.1938,
+    0.0173
+   ]
+  },
+  {
+   "id": "deped",
+   "text": "Department of Education",
+   "zone": [
+    0.3896,
+    0.0568,
+    0.2208,
+    0.0204
+   ]
+  },
+  {
+   "id": "title",
+   "text": "CERTIFICATE OF GOOD MORAL CHARACTER",
+   "zone": [
+    0.2392,
+    0.2125,
+    0.5212,
+    0.0207
+   ]
+  },
+  {
+   "id": "to_whom",
+   "text": "TO WHOM IT MAY CONCERN:",
+   "zone": [
+    0.1135,
+    0.2838,
+    0.2377,
+    0.0167
+   ]
+  }
+ ],
+ "fields": [
+  {
+   "name": "school_name",
+   "missing_value_severity": 0.6,
+   "value_zone": [
+    0.2048,
+    0.1094,
+    0.5905,
+    0.0219
+   ]
+  },
+  {
+   "name": "student_name",
+   "label": "This is to certify that",
+   "label_zone": [
+    0.1619,
+    0.3335,
+    0.1756,
+    0.0196
+   ],
+   "value_zone": [
+    0.119,
+    0.367,
+    0.7619,
+    0.0337
+   ]
+  },
+  {
+   "name": "date_issued",
+   "label": "Issued this",
+   "label_zone": [
+    0.1619,
+    0.63,
+    0.0982,
+    0.0167
+   ],
+   "value_zone": [
+    0.2499,
+    0.6229,
+    0.5238,
+    0.0269
+   ]
+  },
+  {
+   "name": "signatory_name",
+   "label": "School Principal",
+   "label_zone": [
+    0.6474,
+    0.7552,
+    0.1333,
+    0.0181
+   ],
+   "value_zone": [
+    0.5238,
+    0.7273,
+    0.381,
+    0.0269
+   ]
+  }
+ ],
+ "tables": [],
+ "alignment": [
+  {
+   "id": "issued_row",
+   "kind": "baseline",
+   "members": [
+    "label:date_issued",
+    "date_issued"
+   ]
+  },
+  {
+   "id": "body_left",
+   "kind": "left",
+   "tolerance_mm": 1.5,
+   "members": [
+    "label:student_name",
+    "label:date_issued"
+   ]
+  }
+ ],
+ "font_groups": [
+  {
+   "id": "body",
+   "members": [
+    "label:student_name",
+    "label:date_issued",
+    "date_issued",
+    "heading:to_whom"
+   ]
+  }
+ ],
+ "seals": [
+  {
+   "id": "deped_logo",
+   "template": "deped_logo.png",
+   "zone": [
+    0.8095,
+    0.0438,
+    0.1143,
+    0.0808
+   ]
+  }
+ ],
+ "text_zones": [
+  [
+   0.409,
+   0.0742,
+   0.1819,
+   0.0243
+  ],
+  [
+   0.3808,
+   0.0911,
+   0.238,
+   0.0243
+  ],
+  [
+   0.3715,
+   0.1276,
+   0.2569,
+   0.0223
+  ],
+  [
+   0.1095,
+   0.4173,
+   0.648,
+   0.0266
+  ],
+  [
+   0.1095,
+   0.4449,
+   0.6081,
+   0.026
+  ],
+  [
+   0.1095,
+   0.4718,
+   0.55,
+   0.026
+  ],
+  [
+   0.1095,
+   0.4987,
+   0.1747,
+   0.026
+  ],
+  [
+   0.1095,
+   0.5523,
+   0.6174,
+   0.026
+  ],
+  [
+   0.1095,
+   0.5792,
+   0.2214,
+   0.026
+  ],
+  [
+   0.1095,
+   0.8346,
+   0.2126,
+   0.0206
+  ],
+  [
+   0.119,
+   0.0741,
+   0.7619,
+   0.037
+  ],
+  [
+   0.0476,
+   0.1279,
+   0.9048,
+   0.0202
+  ]
+ ],
+ "shaded_zones": []
+}

@@ -1,0 +1,15 @@
+{
+ "ocr": {
+  "a": -5.3799,
+  "b": 5.5481,
+  "c": 5.3171,
+  "n_pages": 103
+ },
+ "ocr+refs": {
+  "a": -6.3646,
+  "b": 5.8911,
+  "c": 4.9823,
+  "n_pages": 103
+ },
+ "note": "Fitted 2026-10-12 on 103 synthetic SAMPLE pages per mode (seed 7000: clean, tampered, poor captures, out-of-scope incl. a TOR from this system); 'ocr+refs' with 8 synthetic references per type. Synthetic pages separate too easily, so treat these as a placeholder: refit on the client's labelled samples (screening-calibrate)."
+}

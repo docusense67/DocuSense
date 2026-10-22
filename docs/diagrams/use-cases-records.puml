@@ -1,0 +1,87 @@
+@startuml use-cases-records
+' Use cases: academic records. Detail of the "records" package in use-cases.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: academic records
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Signed-in user" as AnyUser
+actor "Student" as Student
+actor "Teacher" as Teacher
+actor "Class adviser" as Adviser
+actor "Registrar" as Registrar
+
+Adviser -up-|> Teacher
+
+rectangle "DocuSense" {
+  package "Academic records" {
+    usecase "Browse programs,\nsubjects and terms" as R_CATALOG
+    ' @routes R_CATALOG: GET /api/programs | GET /api/subjects | GET /api/terms
+    usecase "View own grades\nand records" as R_OWN
+    ' @routes R_OWN: GET /api/students/me | GET /api/students/me/records
+    usecase "View advisory class\n(rosters and grades, read-only)" as R_ADVISORY
+    ' @routes R_ADVISORY: GET /api/advisory
+    usecase "Encode or import grades\nfor own sections" as R_GRADES
+    ' @routes R_GRADES: GET /api/sections | GET /api/sections/{section_id}/enrollments | GET /api/sections/{section_id}/grades | PUT /api/sections/{section_id}/grades | POST /api/sections/{section_id}/grades/import
+    usecase "Submit section grades" as R_SUBMIT
+    ' @routes R_SUBMIT: POST /api/sections/{section_id}/submit
+    usecase "Request a grade change\n(after submission)" as R_CHANGE
+    ' @routes R_CHANGE: GET /api/grade-change-requests | POST /api/grade-change-requests
+    usecase "Approve or reject\na grade change" as R_DECIDE
+    ' @routes R_DECIDE: POST /api/grade-change-requests/{request_id}/approve | POST /api/grade-change-requests/{request_id}/reject
+    usecase "Maintain student master list\n(add, import, edit, view records)" as R_STUDENTS
+    ' @routes R_STUDENTS: GET /api/students | POST /api/students | POST /api/students/import | GET /api/students/{student_id} | PATCH /api/students/{student_id} | GET /api/students/{student_id}/records
+    usecase "Set up programs,\nsubjects and terms" as R_SETUP
+    ' @routes R_SETUP: POST /api/programs | POST /api/subjects | POST /api/terms | POST /api/terms/{term_id}/set-current
+    usecase "Lock a term's grades" as R_LOCK
+    ' @routes R_LOCK: POST /api/terms/{term_id}/lock
+    usecase "Add teachers\n(with their login)" as R_TEACHERS
+    ' @routes R_TEACHERS: GET /api/teachers | POST /api/teachers
+    usecase "Open sections and\nassign subject teachers" as R_SECTIONS
+    ' @routes R_SECTIONS: POST /api/sections | PATCH /api/sections/{section_id}/teacher
+    usecase "Enroll or drop students" as R_ENROLL
+    ' @routes R_ENROLL: POST /api/enrollments | POST /api/sections/{section_id}/enroll | POST /api/enrollments/{enrollment_id}/drop
+    usecase "Assign class advisers\n(one per block section)" as R_ADVISERS
+    ' @routes R_ADVISERS: GET /api/section-advisers | PUT /api/section-advisers
+  }
+}
+
+AnyUser -- R_CATALOG
+Student -- R_OWN
+Adviser -- R_ADVISORY
+Teacher -- R_GRADES
+Teacher -- R_SUBMIT
+Teacher -- R_CHANGE
+
+Registrar -- R_GRADES
+Registrar -- R_SUBMIT
+Registrar -- R_CHANGE
+Registrar -- R_DECIDE
+Registrar -- R_STUDENTS
+Registrar -- R_SETUP
+Registrar -- R_LOCK
+Registrar -- R_TEACHERS
+Registrar -- R_SECTIONS
+Registrar -- R_ENROLL
+Registrar -- R_ADVISERS
+
+
+note "Teachers see only their own sections;\nstudents only their own records.\nRegistrar edits to official records need a reason." as N1
+@enduml

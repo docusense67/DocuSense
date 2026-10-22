@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Transcript of Records {{ document_number }}</title>
+<style>
+  /* Stand-in layout until the school's official TOR arrives. Positions inside .head are
+     fixed in mm because the OCR zones (defaults.py) depend on them. Page margins are
+     18mm top / 20mm left, so page_x = 20 + x and page_y = 18 + y. */
+  * { box-sizing: border-box; }
+  body { margin: 0; color: #000; font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+         font-size: 10pt; }
+  .head { position: relative; height: 66mm; }
+  .school { position: absolute; left: 0; top: 0; width: 140mm; text-align: center; }
+  .school .name { font-size: 14pt; font-weight: bold; }
+  .school .addr { font-size: 9pt; margin-top: 1mm; }
+  .title { position: absolute; left: 0; top: 17mm; width: 140mm; text-align: center;
+           font-size: 13pt; font-weight: bold; letter-spacing: 0.5pt; }
+  .qr { position: absolute; right: 0; top: 0; width: 26mm; height: 26mm; }
+  .id { position: absolute; left: 0; top: 30mm; width: 170mm; height: 33mm;
+        border: 0.3mm solid #000; }
+  .row { position: absolute; left: 0; width: 170mm; height: 5.5mm; line-height: 5.5mm; }
+  .row .k { position: absolute; left: 2mm; width: 33mm; font-weight: bold; }
+  .row .v { position: absolute; left: 36mm; width: 132mm; white-space: nowrap; }
+  table.grades { width: 170mm; border-collapse: collapse; }
+  table.grades th, table.grades td { border: 0.3mm solid #000; padding: 1mm 1.5mm;
+                                     line-height: 1.25; vertical-align: middle; }
+  table.grades th { background: #eee; text-align: left; font-size: 9pt; }
+  table.grades tr { page-break-inside: avoid; }
+  td.num { text-align: center; }
+  tr.term td { font-weight: bold; background: #f4f4f4; }
+  tr.termgwa td { text-align: right; font-style: italic; }
+  .end { text-align: center; margin-top: 3mm; font-size: 9pt; }
+  .sign { margin-top: 12mm; page-break-inside: avoid; }
+  .sign .who { margin-top: 12mm; font-weight: bold; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="school">
+      <div class="name">{{ institution_name }}</div>
+      <div class="addr">{{ institution_address }}</div>
+      <div class="addr">Office of the University Registrar</div>
+    </div>
+    <div class="title">OFFICIAL TRANSCRIPT OF RECORDS</div>
+    <img class="qr" src="{{ qr_code }}" alt="Verification QR code">
+    <div class="id">
+      <div class="row" style="top: 0mm"><span class="k">Name</span><span class="v">{{ student_name }}</span></div>
+      <div class="row" style="top: 5.5mm"><span class="k">Student No.</span><span class="v">{{ student_number }}</span></div>
+      <div class="row" style="top: 11mm"><span class="k">Program</span><span class="v">{{ program }}</span></div>
+      <div class="row" style="top: 16.5mm"><span class="k">Document No.</span><span class="v">{{ document_number }}</span></div>
+      <div class="row" style="top: 22mm"><span class="k">Date Issued</span><span class="v">{{ date_issued }}</span></div>
+      <div class="row" style="top: 27.5mm"><span class="k">GWA</span><span class="v">{{ gwa }}</span></div>
+    </div>
+  </div>
+
+  <table class="grades">
+    <thead>
+      <tr>
+        <th style="width: 24mm">Code</th>
+        <th style="width: 86mm">Descriptive Title</th>
+        <th style="width: 16mm">Units</th>
+        <th style="width: 20mm">Grade</th>
+        <th style="width: 24mm">Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for term in terms %}
+      <tr class="term"><td colspan="5">{{ term.semester }}, AY {{ term.academic_year }}</td></tr>
+      {% for subject in term.subjects %}
+      <tr>
+        <td>{{ subject.subject_code }}</td>
+        <td>{{ subject.subject_title }}</td>
+        <td class="num">{{ subject.units }}</td>
+        <td class="num">{{ subject.grade }}</td>
+        <td>{{ subject.remarks }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="termgwa"><td colspan="5">Term GWA: {{ term.gwa }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="end">*** Nothing follows ***</div>
+
+  <div class="sign">
+    <div>Issued by:</div>
+    <div class="who">{{ registrar_name }}</div>
+    <div>{{ registrar_title }}</div>
+  </div>
+</body>
+</html>

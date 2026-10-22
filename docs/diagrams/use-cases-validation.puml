@@ -1,0 +1,65 @@
+@startuml use-cases-validation
+' Use cases: validation of printed (issued) documents. Detail of the "validation" package in
+' use-cases.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: validation of printed documents
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Registrar" as Registrar
+actor "Validation operator\n(registrar with\nvalidation permission)" as Operator
+actor "Scan station\n(outgoing validation)" as ScanStation <<system>>
+
+Operator -up-|> Registrar
+
+rectangle "DocuSense" {
+  package "Validation of printed documents" {
+    usecase "Run a scan session\n(single or bulk)" as V_SESSION
+    ' @routes V_SESSION: GET /api/scan-stations | POST /api/scan-sessions | GET /api/scan-sessions/{session_id} | POST /api/scan-sessions/{session_id}/end
+    usecase "Review validation results\n(reasons, page images)" as V_RESULTS
+    ' @routes V_RESULTS: GET /api/validations | GET /api/validations/{scanned_id} | GET /api/validations/{scanned_id}/pages/{page}
+    usecase "Decide a NEEDS REVIEW result" as V_CONFIRM
+    ' @routes V_CONFIRM: POST /api/validations/{scanned_id}/review
+    usecase "View statistics and\nexport results" as V_REPORT
+    ' @routes V_REPORT: GET /api/validations/stats | GET /api/validations/export
+    usecase "Look up template zones\nand page count\n(no student data)" as V_LOOKUP
+    ' @routes V_LOOKUP: POST /api/station/lookup
+    usecase "Submit a scanned document\n(page images + extracted fields)" as V_UPLOAD
+    ' @routes V_UPLOAD: GET /api/station/session | POST /api/station/sessions/{session_id}/documents
+    usecase "Compare with official records\n(VALID / INVALID / NEEDS REVIEW)" as V_DECIDE
+    usecase "Report station status\n(ready, jam, offline)" as V_STATUS
+    ' @routes V_STATUS: POST /api/station/status
+  }
+}
+
+Operator -- V_SESSION
+Operator -- V_RESULTS
+Operator -- V_REPORT
+
+V_LOOKUP -- ScanStation
+V_UPLOAD -- ScanStation
+V_STATUS -- ScanStation
+
+V_UPLOAD ..> V_LOOKUP : <<include>>
+V_UPLOAD ..> V_DECIDE : <<include>>
+V_RESULTS <.. V_CONFIRM : <<extend>>
+
+note "The station only extracts fields;\nthe backend decides the result.\nVALID means the document matches\nofficial records." as N1
+@enduml

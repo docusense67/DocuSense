@@ -1,0 +1,114 @@
+# Production / pilot stack (Section 11, 18). Setup and operations:
+# docs/admin-installation-guide.md.
+#
+#   web      Nginx: HTTPS, HTTP->HTTPS redirect, static web app, proxy to the API
+#   api      FastAPI with a least-privilege database login
+#   migrate  one-shot: schema migrations + DB login grants, as the database owner
+#   jobs     daily: download-window expiry (Section 14), idle login session cleanup
+#   backup   daily encrypted database + file backup, 30 days kept (Section 18)
+#   db       PostgreSQL 16, never published to the host network
+
+x-api-image: &api-image
+  image: adgvs-api:latest
+  build: ./backend  # one image for api, migrate and jobs (identical builds hit the cache)
+  env_file: .env
+  restart: unless-stopped
+  volumes:
+    - storage:/data/storage
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-adgvs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-adgvs}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-adgvs}"]
+      interval: 5s
+      retries: 10
+
+  migrate:
+    <<: *api-image
+    restart: "no"
+    environment:
+      ADGVS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-adgvs}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-adgvs}
+      ADGVS_APP_DB_PASSWORD: ${ADGVS_APP_DB_PASSWORD:?set ADGVS_APP_DB_PASSWORD in .env}
+    command: ["sh", "-c", "alembic upgrade head && python -m app.manage setup-db-roles"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *api-image
+    environment: &api-env
+      # The app login, not the owner: no DDL, audit log insert-only.
+      ADGVS_DATABASE_URL: postgresql+psycopg://${ADGVS_APP_DB_USER:-adgvs_app}:${ADGVS_APP_DB_PASSWORD}@db:5432/${POSTGRES_DB:-adgvs}
+      ADGVS_SECRET_KEY: ${ADGVS_SECRET_KEY:?set ADGVS_SECRET_KEY in .env}
+      # Owner and backup secrets are in .env for the other services; blank them here.
+      POSTGRES_PASSWORD: ""
+      BACKUP_PASSPHRASE: ""
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      retries: 5
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  jobs:
+    <<: *api-image
+    environment: *api-env
+    volumes:
+      - ./deploy/daily.sh:/usr/local/bin/daily.sh:ro
+    command: ["bash", "/usr/local/bin/daily.sh", "${JOBS_TIME:-01:00}",
+              "python", "-m", "app.jobs", "daily"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?set SERVER_NAME in .env}
+      TZ: ${TZ:-PHT-8}
+    volumes:
+      - ./deploy/nginx/templates:/etc/nginx/templates:ro
+      - ./deploy/nginx/snippets:/etc/nginx/snippets:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  backup:
+    build:
+      context: ./deploy
+      dockerfile: backup/Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-adgvs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-adgvs}
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?set BACKUP_PASSPHRASE in .env}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      TZ: ${TZ:-PHT-8}
+    volumes:
+      - storage:/data/storage
+      # Point BACKUP_DIR at a disk or NAS mount that is not the server's system disk
+      # so one copy survives a server failure (Section 18: one copy off-server).
+      - ${BACKUP_DIR:-./backups}:/backups
+    command: ["daily.sh", "${BACKUP_TIME:-02:00}", "backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  storage:

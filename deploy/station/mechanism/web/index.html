@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADGVS · Mechanism control</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div><p class="eyebrow">ADGVS / LOCAL STATION</p><h1>Paper feed mechanism</h1><p class="subtitle">Motor and servo controls for the Raspberry Pi station.</p></div>
+      <div class="connection"><span id="mode" class="badge">Checking server…</span><button id="connect" disabled>Connect Hardware</button></div>
+    </header>
+    <div id="error" class="error" role="alert" hidden></div>
+    <section class="card live" aria-label="Live command status">
+      <div><p class="eyebrow">CURRENT STAGE</p><h2 id="status" aria-live="polite">Connecting to localhost…</h2><p id="detail" class="muted">No movement starts automatically.</p></div>
+      <button id="stop" class="danger" disabled>STOP ALL</button>
+      <progress id="progress" max="100" value="0" aria-label="Cycle progress"></progress>
+      <div class="run-row"><button id="cycle" class="primary" disabled>Run One Cycle</button><button id="motor" disabled>Continuous Motor</button><span class="muted">One cycle per click · motor at 100% PWM</span></div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <p class="eyebrow">AUTOMATIC SEQUENCE</p><h2>Feed, then move</h2>
+        <ol class="sequence">
+          <li><span class="number">01</span><div><strong>First servo</strong><p>90° → 180° → 90°</p></div><span class="time">0.5s / position</span></li>
+          <li><span class="number">02</span><div><strong>DC motor</strong><p>Backward · 100% PWM</p></div><span class="time">5 seconds</span></li>
+          <li><span class="number">03</span><div><strong>Second servo</strong><p>Maximum rotation command</p></div><span class="time">8 seconds</span></li>
+          <li><span class="number">04</span><div><strong>Up / down mechanism</strong><p id="sequence-placement">After the second servo: UP → DOWN → UP</p></div><span class="time">Adjustable</span></li>
+        </ol>
+        <p class="muted note">The motor stops during servo movements. Closing this page or losing its connection stops movement.</p>
+      </section>
+      <section class="card">
+        <p class="eyebrow">THIRD SG90</p><h2>Up / down settings</h2>
+        <form id="settings">
+          <fieldset id="settings-fields" disabled>
+            <label>Paper feed finishes<select id="after-feed"><option value="servo2">After second servo (8 seconds)</option><option value="motor">After DC motor (5 seconds)</option></select></label>
+            <div class="two-fields"><label>UP angle<input id="up-angle" type="number" min="0" max="180" step="1" value="180" readonly required></label><label>DOWN angle<input id="down-angle" type="number" min="0" max="180" step="1" value="90" readonly required></label></div>
+            <label>Hold DOWN (seconds)<input id="down-seconds" type="number" min="0.1" max="10" step="0.1" value="1" required></label>
+            <div class="two-fields"><button id="up" type="button">Test UP</button><button id="down" type="button">Test DOWN</button></div>
+          </fieldset>
+        </form>
+        <p class="muted note">Calibrate angles with the horn detached from the mechanism first.</p>
+      </section>
+      <section class="card">
+        <p class="eyebrow">INDIVIDUAL TESTS</p><h2>One device at a time</h2>
+        <p class="muted">Test the two feeding devices without running the complete sequence.</p>
+        <div class="two-fields"><button id="test-motor" disabled>Test Motor · 5s</button><button id="test-servo2" disabled>Test Servo 2 · 8s</button></div>
+        <details><summary>Wiring reference</summary><table><thead><tr><th>Connection</th><th>GPIO</th><th>Physical pin</th></tr></thead><tbody><tr><td>L298N IN1</td><td>17</td><td>11</td></tr><tr><td>L298N IN2</td><td>27</td><td>13</td></tr><tr><td>L298N ENA</td><td>18</td><td>12</td></tr><tr><td>Servo 1 signal</td><td>12</td><td>32</td></tr><tr><td>Servo 2 signal</td><td>13</td><td>33</td></tr><tr><td>Up/down signal</td><td>19</td><td>35</td></tr></tbody></table><p class="muted">Remove the ENA jumper. Use external regulated 5 V for servos and a common ground with the Pi and motor driver.</p></details>
+      </section>
+      <section class="card"><p class="eyebrow">ACTIVITY</p><h2>Command history</h2><ol id="activity" class="activity" aria-live="polite"><li>Waiting for a connection.</li></ol></section>
+    </div>
+    <footer><span id="backend">GPIO is not connected</span><span>Local control · no GPIO push buttons required</span></footer>
+  </main>
+</body>
+</html>

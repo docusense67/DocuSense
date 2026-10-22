@@ -1,0 +1,40 @@
+[project]
+name = "adgvs-scan-agent"
+version = "0.1.0"
+description = "Scan station agent: capture, clean-up, QR + OCR extraction, upload"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "opencv-python-headless>=4.10",
+    "pyzbar>=0.1.9",
+    "pytesseract>=0.3.13",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+twain = ["pytwain>=2.3"]   # Windows station
+sane = ["python-sane>=2.9"]  # Linux station
+pdf = ["pypdfium2>=4.30"]  # file-drop of scanner PDF output
+dev = ["pytest>=8.3", "ruff>=0.6", "pypdfium2>=4.30"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["scan_agent*"]
+
+[tool.setuptools.package-data]
+# screening reference profiles (data, not code): needed by non-editable installs (the Pi)
+"scan_agent.screening" = ["profiles/*.json", "profiles/*.md", "profiles/templates/*.png"]

@@ -1,0 +1,2 @@
+# Load-test tool only; not installed on the server or the scan station.
+locust>=2.32,<3

@@ -1,0 +1,58 @@
+# Render Blueprint: the API container on Render Free, Singapore (docs/cloud-deployment.md).
+# The web app is on Vercel (frontend/vercel.json), which forwards /api/* here, so browser and
+# API share one origin. Database and files are on Supabase.
+#
+# Secrets (sync: false) are asked for once, when the Blueprint is first created; later Blueprint
+# syncs never overwrite them. Change them in the Render Dashboard > adgvs-api > Environment.
+services:
+  - type: web
+    name: adgvs-api
+    runtime: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    # Render Free has no pre-deploy command, so .github/workflows/deploy.yml runs the database
+    # migrations first and then starts this deploy through the deploy hook. A Git-triggered
+    # deploy could start new code against an old schema.
+    autoDeployTrigger: "off"
+    envVars:
+      # The image's CMD listens on 8000; Render routes traffic to the port in PORT.
+      - key: PORT
+        value: "8000"
+      # 512 MB of RAM on the free plan: one worker process.
+      - key: API_WORKERS
+        value: "1"
+      # The API's least-privilege login (created by deploy/cloud/migrate.sh), never the owner:
+      # postgresql+psycopg://adgvs_app.<project-ref>:<ADGVS_APP_DB_PASSWORD>@<session-pooler-host>:5432/postgres?sslmode=require
+      - key: ADGVS_DATABASE_URL
+        sync: false
+      # Signs download links. Random on first creation; regenerating it only invalidates
+      # download links already handed out (5-minute life).
+      - key: ADGVS_SECRET_KEY
+        generateValue: true
+      # Same value as CRON_SECRET in the Vercel project (Vercel sends it as a Bearer token).
+      - key: ADGVS_CRON_SECRET
+        sync: false
+      - key: ADGVS_STORAGE_BACKEND
+        value: supabase
+      - key: ADGVS_SUPABASE_URL
+        value: https://xbirhmmdctcqniwbbccy.supabase.co
+      # Supabase secret key (server only; never put it in the web app or in Vercel).
+      - key: ADGVS_SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ADGVS_STORAGE_BUCKET
+        value: adgvs-private
+      # Client IP for the audit log: browser -> Vercel -> Render's proxy -> API.
+      - key: ADGVS_TRUSTED_PROXY_HOPS
+        value: "2"
+      - key: ADGVS_COOKIE_SECURE
+        value: "true"
+      - key: ADGVS_API_DOCS
+        value: "false"
+      # Browser and API share the Vercel origin. List that origin here anyway, e.g.
+      # ["https://adgvs.vercel.app"]: behind the rewrite the API sees Host = onrender.com, and
+      # the CSRF check's Origin fallback (browsers without Sec-Fetch-Site) compares against it.
+      - key: ADGVS_CORS_ORIGINS
+        sync: false

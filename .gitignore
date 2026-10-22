@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Local data (PDFs, scans, SQLite dev DBs)
+storage/
+*.db
+*.sqlite3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build output
+build/
+
+# Local virtualenvs and test logs
+scan-agent/.venv/
+pytest.log
+backend/dev.db
+backend/storage-dev/
+
+# Deployment secrets and data (never commit)
+backups/
+deploy/certs/*.pem
+
+# Load test output
+/loadtest/
+
+# Screening reference samples and client sample sets hold minors' personal data: never commit
+screening-refs/
+.samples/
+client-samples/
+
+# Local mechanism runtime state
+deploy/station/mechanism/*.log*
+deploy/station/mechanism/.gpio.lock
+deploy/station/mechanism/.camera_pending/
+deploy/station/local.env
+# Station runtime diagnostics (private; never source assets).
+deploy/station/mechanism/.hardware-health.json
+deploy/station/mechanism/.hardware-health.tmp

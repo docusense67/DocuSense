@@ -1,0 +1,272 @@
+{
+ "schema": 1,
+ "doc_type": "jhs_completion_certificate",
+ "variant": "deped_landscape",
+ "description": "v1 bootstrapped from the synthetic layout (an approximation of the real form). Re-tune with client samples: see profiles/README.md.",
+ "page_mm": [
+  297.0,
+  210.0
+ ],
+ "tolerance_mm": 6.0,
+ "keywords": [
+  {
+   "text": "CERTIFICATE OF COMPLETION",
+   "weight": 4,
+   "zone": [
+    0.1,
+    0.3,
+    0.8,
+    0.2
+   ]
+  },
+  {
+   "text": "JUNIOR HIGH SCHOOL",
+   "weight": 2
+  },
+  {
+   "text": "This certificate is awarded to",
+   "weight": 1
+  },
+  {
+   "text": "satisfactorily completed",
+   "weight": 1
+  },
+  {
+   "text": "Schools Division Superintendent",
+   "weight": 1
+  },
+  {
+   "text": "DEPARTMENT OF EDUCATION",
+   "weight": 0.5
+  },
+  {
+   "text": "LRN",
+   "weight": 0.5
+  },
+  {
+   "text": "Given this",
+   "weight": 0.5
+  }
+ ],
+ "headings": [
+  {
+   "id": "republic",
+   "text": "Republic of the Philippines",
+   "zone": [
+    0.4314,
+    0.1931,
+    0.137,
+    0.0244
+   ]
+  },
+  {
+   "id": "deped",
+   "text": "DEPARTMENT OF EDUCATION",
+   "zone": [
+    0.4037,
+    0.2192,
+    0.1926,
+    0.0248
+   ]
+  },
+  {
+   "id": "title",
+   "text": "CERTIFICATE OF COMPLETION",
+   "zone": [
+    0.3093,
+    0.3773,
+    0.381,
+    0.0386
+   ]
+  },
+  {
+   "id": "awarded",
+   "text": "This certificate is awarded to",
+   "zone": [
+    0.4054,
+    0.4561,
+    0.1892,
+    0.0252
+   ]
+  },
+  {
+   "id": "jhs",
+   "text": "JUNIOR HIGH SCHOOL PROGRAM",
+   "zone": [
+    0.3846,
+    0.6756,
+    0.2305,
+    0.0257
+   ]
+  }
+ ],
+ "fields": [
+  {
+   "name": "school_name",
+   "missing_value_severity": 0.6,
+   "value_zone": [
+    0.2912,
+    0.2929,
+    0.4175,
+    0.031
+   ]
+  },
+  {
+   "name": "learner_name",
+   "missing_value_severity": 0.6,
+   "value_zone": [
+    0.1347,
+    0.5,
+    0.7306,
+    0.0619
+   ]
+  },
+  {
+   "name": "lrn",
+   "label": "LRN:",
+   "label_zone": [
+    0.4007,
+    0.5823,
+    0.0355,
+    0.0228
+   ],
+   "value_zone": [
+    0.4377,
+    0.5714,
+    0.1852,
+    0.0381
+   ]
+  },
+  {
+   "name": "date_given",
+   "label": "Given this",
+   "label_zone": [
+    0.2323,
+    0.7768,
+    0.0649,
+    0.0236
+   ],
+   "value_zone": [
+    0.29,
+    0.7667,
+    0.404,
+    0.0381
+   ]
+  },
+  {
+   "name": "principal_name",
+   "label": "School Principal",
+   "label_zone": [
+    0.2389,
+    0.93,
+    0.0943,
+    0.0257
+   ],
+   "value_zone": [
+    0.1347,
+    0.8857,
+    0.303,
+    0.0381
+   ]
+  },
+  {
+   "name": "sds_name",
+   "label": "Schools Division Superintendent",
+   "label_zone": [
+    0.6224,
+    0.93,
+    0.1829,
+    0.0257
+   ],
+   "value_zone": [
+    0.5623,
+    0.8857,
+    0.303,
+    0.0381
+   ]
+  }
+ ],
+ "tables": [],
+ "alignment": [
+  {
+   "id": "given_row",
+   "kind": "baseline",
+   "members": [
+    "label:date_given",
+    "date_given"
+   ]
+  },
+  {
+   "id": "lrn_row",
+   "kind": "baseline",
+   "members": [
+    "label:lrn",
+    "lrn"
+   ]
+  },
+  {
+   "id": "signatures",
+   "kind": "baseline",
+   "members": [
+    "principal_name",
+    "sds_name"
+   ]
+  }
+ ],
+ "font_groups": [
+  {
+   "id": "body",
+   "members": [
+    "label:date_given",
+    "date_given",
+    "label:lrn",
+    "lrn"
+   ]
+  }
+ ],
+ "seals": [
+  {
+   "id": "deped_logo",
+   "template": "deped_logo.png",
+   "zone": [
+    0.4562,
+    0.0429,
+    0.0875,
+    0.1238
+   ]
+  }
+ ],
+ "text_zones": [
+  [
+   0.4357,
+   0.2431,
+   0.1286,
+   0.0344
+  ],
+  [
+   0.4157,
+   0.2669,
+   0.1683,
+   0.0344
+  ],
+  [
+   0.3065,
+   0.6323,
+   0.3866,
+   0.0388
+  ],
+  [
+   0.3533,
+   0.7085,
+   0.2934,
+   0.0388
+  ],
+  [
+   0.2306,
+   0.2429,
+   0.5387,
+   0.0524
+  ]
+ ],
+ "shaded_zones": []
+}

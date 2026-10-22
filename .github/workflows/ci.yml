@@ -1,0 +1,291 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: adgvs
+          POSTGRES_PASSWORD: adgvs
+          POSTGRES_DB: adgvs
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      ADGVS_DATABASE_URL: postgresql+psycopg://adgvs:adgvs@localhost:5432/adgvs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: System libraries (WeasyPrint for PDFs, Tesseract + zbar for the E2E scan test)
+        run: >-
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends
+          libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+          tesseract-ocr libzbar0
+      - run: pip install -c constraints.txt ".[dev]" "../scan-agent[dev]"
+      - run: ruff check .
+      - name: Known vulnerabilities in pinned dependencies
+        run: pip install pip-audit && pip-audit -r constraints.txt
+      - name: Migrations apply cleanly on Postgres
+        run: alembic upgrade head && alembic downgrade base
+      - name: Tests (no skips allowed in CI; rendering and E2E scan must run here)
+        run: |
+          set -o pipefail
+          pytest -q -rs | tee pytest.log
+          ! grep -q SKIPPED pytest.log
+      - name: Render sample TOR/COE PDFs
+        env:
+          ADGVS_STORAGE_DIR: ${{ runner.temp }}/storage
+        run: python -m app.documents.samples ../sample-pdfs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sample-pdfs
+          path: sample-pdfs/
+
+  scan-agent:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scan-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr libzbar0
+      - run: pip install -c constraints.txt ".[dev]"
+      - run: ruff check .
+      - run: pip install pip-audit && pip-audit -r constraints.txt
+      - run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run lint
+      - run: npm run build
+
+  # Browser end-to-end tests (Playwright, Chromium): the real API on a throwaway SQLite DB
+  # (backend/scripts/dev_server.py, demo data, CI sample PDFs) behind the Vite dev server.
+  # Desktop project + the scan station TFT viewport project (frontend/playwright.config.ts).
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/constraints.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -c ../backend/constraints.txt ../backend
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        env:
+          E2E_PYTHON: python
+        run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14
+
+  # Section 21 OCR pre-check: 100 documents generated as in production for synthetic
+  # students, scanned in simulation. The real-paper run on the station is separate (/ocr-eval).
+  ocr-accuracy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/constraints.txt
+            scan-agent/constraints.txt
+      - name: System libraries (WeasyPrint, Tesseract, zbar)
+        run: >-
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends
+          libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+          tesseract-ocr libzbar0
+      - run: pip install -c backend/constraints.txt ./backend "./scan-agent[pdf]"
+      - name: 100 documents (60 COE, 40 TOR of 1-5 terms) for synthetic students
+        working-directory: backend
+        run: python scripts/make_ocr_set.py ../ocr-set 100
+      - name: Clean simulated scans, field accuracy (target 98%)
+        working-directory: scan-agent
+        run: |
+          python -m scan_agent.simulate --pdfs ../ocr-set/pdfs --out ../ocr-set/scans-clean --level clean
+          python -m scan_agent.evaluate --scans ../ocr-set/scans-clean --expected ../ocr-set/expected \
+            --report ../ocr-set/clean.csv
+      - name: Rough simulated scans (information only)
+        if: always()
+        working-directory: scan-agent
+        run: |
+          python -m scan_agent.simulate --pdfs ../ocr-set/pdfs --out ../ocr-set/scans-rough --level rough --limit 40
+          python -m scan_agent.evaluate --scans ../ocr-set/scans-rough --expected ../ocr-set/expected \
+            --report ../ocr-set/rough.csv --min-accuracy 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ocr-accuracy
+          path: |
+            ocr-set/*.csv
+            ocr-set/pdfs/
+            ocr-set/expected/
+
+  # The production Docker stack, end to end: HTTPS, go-live commands, least-privilege DB login,
+  # backup + restore check, and an OWASP ZAP baseline scan (Sections 18, 21, 26).
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Throwaway .env and self-signed certificate
+        run: |
+          secret() { python3 -c "import secrets; print(secrets.token_urlsafe(32))"; }
+          cp .env.example .env
+          sed -i -e "s|^SERVER_NAME=.*|SERVER_NAME=localhost|" \
+                 -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(secret)|" \
+                 -e "s|^ADGVS_APP_DB_PASSWORD=.*|ADGVS_APP_DB_PASSWORD=$(secret)|" \
+                 -e "s|^BACKUP_PASSPHRASE=.*|BACKUP_PASSPHRASE=$(secret)|" \
+                 -e "s|^ADGVS_SECRET_KEY=.*|ADGVS_SECRET_KEY=$(secret)|" .env
+          bash deploy/make-self-signed-cert.sh localhost 127.0.0.1
+          mkdir -p backups zap && chmod 777 zap
+      - name: Build and start the stack
+        run: |
+          docker compose up -d --build
+          timeout 300 bash -c 'until curl -fsk https://localhost/api/health; do sleep 3; done'
+          docker compose ps -a
+      - name: HTTPS, redirect and security headers
+        run: |
+          https() { curl -fsS --cacert deploy/certs/fullchain.pem "$@"; }
+          https https://localhost/api/health
+          test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost/records)" \
+            = "301 https://localhost/records"
+          https -D web-headers.txt -o /dev/null https://localhost/
+          https -D api-headers.txt -o /dev/null https://localhost/api/health
+          cat web-headers.txt api-headers.txt
+          grep -qi '^strict-transport-security:' web-headers.txt
+          grep -qi "^content-security-policy: default-src 'self'" web-headers.txt
+          grep -qi '^strict-transport-security:' api-headers.txt
+          grep -qi '^x-content-type-options: nosniff' api-headers.txt
+          test "$(curl -s -o /dev/null -w '%{http_code}' --cacert deploy/certs/fullchain.pem https://localhost/api/docs)" = 404
+      - name: Go-live commands and first login
+        run: |
+          docker compose exec -T api python -m app.manage install-templates
+          password=$(docker compose exec -T api python -m app.manage create-admin it@school.edu.ph | tail -n 1)
+          login=$(curl -fsS --cacert deploy/certs/fullchain.pem -H 'Content-Type: application/json' \
+            -d "{\"email\":\"it@school.edu.ph\",\"password\":\"$password\"}" https://localhost/api/auth/login)
+          echo "$login"
+          grep -q '"must_change_password":true' <<< "$login"
+          docker compose exec -T api python -m app.seed
+      - name: API login cannot change the schema or the audit log
+        run: |
+          app_password=$(grep '^ADGVS_APP_DB_PASSWORD=' .env | cut -d= -f2-)
+          as_app() { docker compose exec -T -e PGPASSWORD="$app_password" db \
+            psql -h 127.0.0.1 -U adgvs_app -d adgvs -v ON_ERROR_STOP=1 -tAc "$1"; }
+          refused() {
+            if as_app "$1"; then echo "NOT REFUSED: $1"; exit 1; fi
+            echo "refused as expected: $1"
+          }
+          as_app "SELECT count(*) FROM users"
+          as_app "INSERT INTO audit_logs (action) VALUES ('ci_check')"
+          refused "UPDATE audit_logs SET action = 'tampered'"
+          refused "DELETE FROM audit_logs"
+          refused "TRUNCATE audit_logs"
+          refused "DROP TABLE grades"
+          refused "CREATE TABLE intruder (id int)"
+      - name: UC1-UC3 inside the stack (approval, WeasyPrint render, verification, protected download)
+        run: |
+          as() {  # as <cookie jar> <path> [json body]
+            curl -fsS --cacert deploy/certs/fullchain.pem -b "$1" -c "$1" \
+              -H 'Content-Type: application/json' ${3:+-d "$3"} "https://localhost/api$2"
+          }
+          for who in maria.santos registrar; do
+            as "$who.jar" /auth/login "{\"email\":\"$who@school.edu.ph\",\"password\":\"ChangeMe-2026\"}"
+            as "$who.jar" /auth/change-password \
+              '{"current_password":"ChangeMe-2026","new_password":"Changed-In-CI-2026"}'
+          done
+          request=$(as maria.santos.jar /requests '{"document_type":"TOR","purpose":"Employment"}')
+          echo "$request"
+          grep -q '"status":"requested"' <<< "$request"  # S-11: waits for approval, nothing generated
+          id=$(jq -r .id <<< "$request")
+          as registrar.jar "/requests/$id/approve" '{}' | grep -q '"status":"for_verification"'
+          as registrar.jar "/requests/$id/verify" '{}' | grep -q '"status":"released"'
+          document=$(as maria.santos.jar "/requests/$id" | jq -r .document.id)
+          link=$(as maria.santos.jar "/documents/$document/download-link" '{}' | jq -r .url)
+          curl -fsS --cacert deploy/certs/fullchain.pem -b maria.santos.jar "https://localhost$link" -o tor.pdf
+          head -c 5 tor.pdf | grep -q '%PDF-'
+      - name: Load test, 100 simultaneous users (Section 21)
+        env:
+          LOAD_CA_CERT: ${{ github.workspace }}/deploy/certs/fullchain.pem
+        run: |
+          pip install -q -r deploy/loadtest/requirements.txt
+          mkdir -p loadtest
+          # Users arrive over 50 s (2/s), then all 100 keep working for the rest of the run.
+          locust -f deploy/loadtest/locustfile.py --headless -u 100 -r 2 -t 3m \
+            --host https://localhost --csv loadtest/results --only-summary --exit-code-on-error 0
+          python deploy/loadtest/check.py loadtest/results_stats.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: loadtest
+          path: loadtest/
+      - name: Backup, then restore check into a scratch database
+        run: |
+          docker compose exec -T backup backup.sh
+          docker compose exec -T backup verify-backup.sh | tee verify.txt
+          grep -q 'files in archive: [1-9]' verify.txt  # the TOR PDF above is in the backup
+          sudo ls -l backups/*/
+      - name: OWASP ZAP baseline scan (fails on any High risk alert)
+        run: |
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t https://localhost -I -r zap-report.html -J zap-report.json
+          high=$(jq '[.site[].alerts[] | select((.riskcode | tonumber) >= 3)] | length' zap/zap-report.json)
+          jq -r '.site[].alerts[] | "\(.riskdesc)\t\(.alert)"' zap/zap-report.json | sort | uniq
+          test "$high" -eq 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report
+          path: zap/
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --no-color

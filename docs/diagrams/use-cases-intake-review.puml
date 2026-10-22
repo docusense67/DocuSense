@@ -1,0 +1,61 @@
+@startuml use-cases-intake-review
+' Use cases: incoming-document screening, staff review side (review queue, student data,
+' docs/intake/screening-contract.md). Detail of the "intake" package in use-cases.puml; the
+' station side is use-cases-intake.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: incoming-document screening (staff review)
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Registrar" as Registrar
+actor "Administrator" as Admin
+
+rectangle "DocuSense" {
+  package "Incoming-document screening" {
+    usecase "Work the review queue\n(page image, reasons)" as I_QUEUE
+    ' @routes I_QUEUE: GET /api/intake/documents | GET /api/intake/documents/{intake_id} | GET /api/intake/documents/{intake_id}/image
+    usecase "Accept, reject or\nrequest resubmission" as I_REVIEW
+    ' @routes I_REVIEW: POST /api/intake/documents/{intake_id}/review
+    usecase "Review extracted\nstudent data" as I_FIELDS
+    ' @routes I_FIELDS: GET /api/intake/documents/{intake_id}/fields | PUT /api/intake/documents/{intake_id}/fields
+    usecase "Link to a student profile\n(candidates are suggestions;\nunlink)" as I_LINK
+    ' @routes I_LINK: GET /api/intake/documents/{intake_id}/candidates | POST /api/intake/documents/{intake_id}/link | POST /api/intake/documents/{intake_id}/unlink
+    usecase "Create a student profile\nfrom the document" as I_CREATE
+    ' @routes I_CREATE: POST /api/intake/documents/{intake_id}/create-student
+  }
+}
+
+Registrar -- I_QUEUE
+Registrar -- I_FIELDS
+Admin -- I_QUEUE
+Admin -- I_FIELDS
+
+I_QUEUE <.. I_REVIEW : <<extend>>
+I_FIELDS <.. I_LINK : <<extend>>
+I_FIELDS <.. I_CREATE : <<extend>>
+
+note as N1
+  A reason is required to reject, to request
+  resubmission and to accept a flagged document,
+  and to link on a match that is not strong.
+  Only passed or accepted documents reach
+  student data review.
+end note
+@enduml

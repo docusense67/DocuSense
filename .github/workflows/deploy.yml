@@ -1,0 +1,91 @@
+# Cloud deploy (docs/cloud-deployment.md): database migrations on Supabase, then the API on
+# Render, then a smoke test through the public Vercel address.
+# The web app itself is deployed by Vercel's Git integration on the same push (no token here).
+# Without the secrets (forks, or before setup) the workflow ends as skipped, not failed.
+name: Deploy (cloud)
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "scan-agent/**"
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits instead of interrupting a migration.
+concurrency:
+  group: deploy-cloud
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  configured:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          OWNER_URL: ${{ secrets.SUPABASE_DB_OWNER_URL }}
+          APP_DB_PASSWORD: ${{ secrets.ADGVS_APP_DB_PASSWORD }}
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$OWNER_URL" ] && [ -n "$APP_DB_PASSWORD" ] && [ -n "$DEPLOY_HOOK" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Cloud deploy skipped: set SUPABASE_DB_OWNER_URL, ADGVS_APP_DB_PASSWORD and RENDER_DEPLOY_HOOK_URL (docs/cloud-deployment.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: configured
+    if: needs.configured.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      API_URL: ${{ vars.API_URL || 'https://adgvs-api.onrender.com' }}
+      PUBLIC_URL: ${{ vars.PUBLIC_URL || secrets.PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same Dockerfile Render builds, so migrations run with exactly the deployed code.
+      - name: Build the API image
+        run: docker build -t adgvs-api ./backend
+
+      - name: Database migrations and API login (Supabase, as the owner)
+        env:
+          SUPABASE_DB_OWNER_URL: ${{ secrets.SUPABASE_DB_OWNER_URL }}
+          ADGVS_APP_DB_PASSWORD: ${{ secrets.ADGVS_APP_DB_PASSWORD }}
+        run: |
+          docker run --rm -e SUPABASE_DB_OWNER_URL -e ADGVS_APP_DB_PASSWORD \
+            -v "$PWD/deploy/cloud:/cloud:ro" adgvs-api bash /cloud/migrate.sh
+
+      - name: Start the Render deploy of this commit
+        id: render
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          case "$DEPLOY_HOOK" in *\?*) sep='&' ;; *) sep='?' ;; esac
+          response=$(curl -fsS -X POST "${DEPLOY_HOOK}${sep}ref=${GITHUB_SHA}")
+          echo "Render: $response"
+          echo "deploy_id=$(jq -r '.deploy.id // empty' <<< "$response")" >> "$GITHUB_OUTPUT"
+          service_id=$(sed -nE 's#.*/deploy/(srv-[A-Za-z0-9]+).*#\1#p' <<< "$DEPLOY_HOOK")
+          echo "service_id=$service_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the new API version
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ steps.render.outputs.service_id }}
+          DEPLOY_ID: ${{ steps.render.outputs.deploy_id }}
+        run: bash deploy/cloud/wait-for-deploy.sh "$API_URL" "$GITHUB_SHA" "$DEPLOY_ID"
+
+      - name: Smoke test through the public address
+        run: |
+          if [ -z "$PUBLIC_URL" ]; then
+            echo "::warning::PUBLIC_URL is not set (repository variable or secret): smoke test skipped."
+            exit 0
+          fi
+          bash deploy/cloud/smoke-test.sh "$PUBLIC_URL" "$API_URL"
