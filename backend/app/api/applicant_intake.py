@@ -118,6 +118,7 @@ def _staff_out(db: Session, sub: ApplicantSubmission) -> dict:
             "intake_document_id": sub.intake_document_id,
             "lease_expires_at": sub.lease_expires_at,
             "second_pass_status": second.status if second else None,
+            "second_pass_error": second.error if second else None,
             "second_pass_disagreements": len(second.disagreements or []) if second else 0}
 
 

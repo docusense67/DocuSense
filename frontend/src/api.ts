@@ -443,6 +443,7 @@ export interface StaffApplicantSubmission extends ApplicantSubmission {
   intake_document_id: number | null
   lease_expires_at: string | null
   second_pass_status: SecondPassStatus | null
+  second_pass_error: string | null
   second_pass_disagreements: number
 }
 export type ReportFormat = 'json' | 'csv' | 'pdf'

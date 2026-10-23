@@ -133,6 +133,7 @@ def test_a_failed_second_pass_is_retried_then_queued_again_by_staff(env, monkeyp
     staff = env["login"]("registrar")
     row = staff.get("/api/applicant-submissions").json()[0]
     assert row["second_pass_status"] == "failed"
+    assert row["second_pass_error"] == "Tesseract crashed"
     res = staff.post(f"/api/applicant-submissions/{sub_id}/retry", json={"reason": "fixed"})
     assert res.json()["second_pass_status"] == "queued"
     assert claim_kind(env, "second")["attempt"] == 1

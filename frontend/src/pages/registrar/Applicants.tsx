@@ -210,7 +210,7 @@ export function Applicants() {
                   {s.status !== 'draft' && s.status !== 'withdrawn' && <span className="block"><ReportLinks id={s.id} /></span>}
                   {(s.status === 'failed' || s.second_pass_status === 'failed') && (
                     <div className="mt-1 space-y-1">
-                      <span className="block text-xs text-critical">{s.error}</span>
+                      <span className="block text-xs text-critical">{s.status === 'failed' ? s.error : s.second_pass_error}</span>
                       <Retry s={s} />
                     </div>
                   )}

@@ -19,10 +19,11 @@ type RefDocType = 'transcript_of_records' | 'certificate_of_enrollment' | 'unkno
 function parseLabels(text: string): Record<string, string[]> {
   const out: Record<string, string[]> = {}
   for (const line of text.split('\n')) {
-    const [field, rest] = line.split(':', 2)
-    if (!field?.trim() || !rest) continue
-    const labels = rest.split(';').map((l) => l.trim()).filter(Boolean)
-    if (labels.length) out[field.trim()] = labels
+    const colon = line.indexOf(':')
+    const field = colon > 0 ? line.slice(0, colon).trim() : ''
+    if (!field) continue
+    const labels = line.slice(colon + 1).split(';').map((l) => l.trim()).filter(Boolean)
+    if (labels.length) out[field] = labels
   }
   return out
 }
