@@ -21,7 +21,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base, JSONType
-from app.models.enums import IntakeDecision, IntakeDocType, IntakeStatus
+from app.models.enums import IntakeDecision, IntakeDocType, IntakeSource, IntakeStatus
 
 
 class IntakeBatch(Base):
@@ -45,7 +45,14 @@ class IntakeDocument(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     batch_id: Mapped[int | None] = mapped_column(ForeignKey("intake_batches.id"), index=True)
+    # Online documents: the station whose OCR worker read the upload (no tray, no batch).
     station_id: Mapped[int] = mapped_column(ForeignKey("scan_stations.id"), index=True)
+    source: Mapped[IntakeSource] = mapped_column(
+        Enum(IntakeSource, native_enum=False, length=20), default=IntakeSource.STATION,
+        server_default=IntakeSource.STATION.name, index=True)  # enums are stored by name
+    submission_id: Mapped[int | None] = mapped_column(
+        ForeignKey("applicant_submissions.id", use_alter=True,
+                   name="fk_intake_documents_submission_id"))
     sequence: Mapped[int | None] = mapped_column(Integer)
     doc_type: Mapped[IntakeDocType] = mapped_column(
         Enum(IntakeDocType, native_enum=False, length=40), index=True)

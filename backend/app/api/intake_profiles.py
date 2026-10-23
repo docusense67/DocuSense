@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import client_ip, get_or_404, require_roles
 from app.api.students import StudentFields, add_student
 from app.db import get_db
-from app.models import IntakeDocument, Student, User
+from app.models import ApplicantSubmission, IntakeDocument, Student, User
 from app.models.enums import IntakeDecision, IntakeDocType, IntakeStatus, Role
 from app.services import audit
 from app.services import intake_fields as fields
@@ -226,6 +226,28 @@ def _link(db: Session, doc: IntakeDocument, student: Student, actor: User, ip: s
                             "match": match["match"] if match else None,
                             "conflicts": match["conflicts"] if match else None,
                             "reason": reason},
+                 ip_address=ip)
+    _hand_over_applicant_login(db, doc, student, actor, ip)
+
+
+def _hand_over_applicant_login(db: Session, doc: IntakeDocument, student: Student, actor: User,
+                               ip: str | None) -> None:
+    """An online upload (docs/applicant-intake.md): the applicant's login becomes this
+    student's login, unless the student already has one (then the applicant login stays as
+    it is and staff decide what to do with it)."""
+    if doc.submission_id is None or student.user_id is not None:
+        return
+    submission = db.get(ApplicantSubmission, doc.submission_id)
+    user = db.get(User, submission.applicant_id) if submission else None
+    if user is None or user.role != Role.APPLICANT or not user.is_active:
+        return
+    student.user_id = user.id
+    user.role = Role.STUDENT
+    audit.record(db, "applicant_login_became_student", user_id=actor.id, entity_type="user",
+                 entity_id=user.id,
+                 old_value={"role": Role.APPLICANT.value},
+                 new_value={"role": Role.STUDENT.value, "student_id": student.id,
+                            "student_number": student.student_number, "intake_id": doc.id},
                  ip_address=ip)
 
 

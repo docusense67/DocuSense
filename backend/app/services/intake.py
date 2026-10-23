@@ -34,6 +34,10 @@ HEADINGS_MISSING = "expected_headings_missing"
 # Added after routing, never by decide(): the gate disagreed with the assigned tray, or jammed.
 ROUTED_TRAY_MISMATCH = "routed_tray_mismatch"
 ROUTING_JAM = "routing_jam"
+# Online uploads only (services/applicant_intake.decide, docs/applicant-intake.md).
+UPLOAD_QUALITY_NOT_OK = "upload_quality_not_ok"
+NO_REFERENCE_PROFILE = "no_reference_profile"
+DECLARED_TYPE_MISMATCH = "declared_type_mismatch"
 
 REASON_TEXT = {
     QUALITY_NOT_OK: "The photo of the page was not usable (blurred, too dark or bright, glare, "
@@ -46,6 +50,11 @@ REASON_TEXT = {
     HEADINGS_MISSING: "Some of the headings this document type should have were not found.",
     ROUTED_TRAY_MISMATCH: "The sorting gate put the page in a different tray than assigned.",
     ROUTING_JAM: "The page jammed while being sorted into a tray.",
+    UPLOAD_QUALITY_NOT_OK: "Some uploaded pages could not be read well (blurred, too dark, cut "
+                           "off); a clearer scan may be needed.",
+    NO_REFERENCE_PROFILE: "There is no reference layout for documents from this school yet, so "
+                          "a person must look at it.",
+    DECLARED_TYPE_MISMATCH: "The document read differs from the type the applicant chose.",
 }
 
 

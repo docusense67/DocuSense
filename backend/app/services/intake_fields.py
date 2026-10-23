@@ -99,6 +99,32 @@ SCHEMAS: dict[IntakeDocType, tuple[FieldSpec, ...]] = {
         FieldSpec("date_issued", "Date given", "date", False, None, ("date_given",),
                   hint=DATE_HINT),
     ),
+    # From another school, uploaded online (docs/applicant-intake.md). The other school's
+    # student number is a source reference only: a new student gets this school's number.
+    IntakeDocType.TRANSCRIPT_OF_RECORDS: (
+        *_names("Student's", source="student_name"),
+        FieldSpec("previous_student_number", "Student number at that school", "text", False,
+                  None, ("student_number",), max_length=40),
+        FieldSpec("program_name", "Program / course", "text", False, None, ("program",),
+                  max_length=200),
+        FieldSpec("school_name", "School", "text", False, None, ("school_name",),
+                  max_length=200),
+        FieldSpec("date_issued", "Date issued", "date", False, None, ("date_issued",),
+                  hint=DATE_HINT),
+    ),
+    IntakeDocType.CERTIFICATE_OF_ENROLLMENT: (
+        *_names("Student's", source="student_name"),
+        FieldSpec("previous_student_number", "Student number at that school", "text", False,
+                  None, ("student_number",), max_length=40),
+        FieldSpec("program_name", "Program / course", "text", False, None, ("program",),
+                  max_length=200),
+        FieldSpec("school_year", "School year", "school_year", False, None, ("school_year",),
+                  hint="e.g. 2025-2026"),
+        FieldSpec("school_name", "School", "text", False, None, ("school_name",),
+                  max_length=200),
+        FieldSpec("date_issued", "Date issued", "date", False, None, ("date_issued",),
+                  hint=DATE_HINT),
+    ),
 }
 
 

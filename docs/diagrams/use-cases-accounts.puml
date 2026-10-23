@@ -27,8 +27,10 @@ actor "Student" as Student
 actor "Teacher" as Teacher
 actor "Registrar" as Registrar
 actor "Administrator" as Admin
+actor "Applicant\n(not yet a student)" as Applicant
 
 Student -up-|> AnyUser
+Applicant -up-|> AnyUser
 Teacher -up-|> AnyUser
 Registrar -up-|> AnyUser
 Admin -up-|> AnyUser

@@ -29,6 +29,7 @@ actor "Validation operator\n(registrar with\nvalidation permission)" as Operator
 actor "Administrator" as Admin
 actor "Scan station\n(outgoing validation)" as ScanStation <<system>>
 actor "Intake station\n(camera + feeder\n+ two trays)" as IntakeStation <<system>>
+actor "Applicant\n(not yet a student)" as Applicant
 
 Adviser -up-|> Teacher
 Operator -up-|> Registrar
@@ -55,6 +56,9 @@ rectangle "DocuSense" {
     usecase "Review queue, student data,\nlink or create profile" as O_I2
     usecase "Operator intake console" as O_I3
   }
+  package "Applicant intake (online uploads)" as applicant {
+    usecase "Upload a TOR / COE,\nOCR reading, staff review" as O_P1
+  }
   package "Administration & audit" as admin {
     usecase "Staff logins, templates,\nstations, thresholds" as O_D1
     usecase "Audit trail, dashboard" as O_D2
@@ -77,10 +81,14 @@ Admin -- intake
 Admin -- admin
 validation -- ScanStation
 intake -- IntakeStation
+Applicant -- applicant
+Registrar -- applicant
+Admin -- applicant
+applicant -- IntakeStation
 
 note as N1
   Every signed-in user (student, teacher,
-  registrar, administrator) logs in, changes
+  registrar, administrator, applicant) logs in, changes
   their password and browses the catalog.
   A class adviser is a teacher; a validation
   operator is a registrar, so each also has

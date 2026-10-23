@@ -19,7 +19,7 @@ from app.api.deps import client_ip, get_or_404, require_validator
 from app.api.scanning import STATION_SILENT_AFTER
 from app.db import get_db
 from app.models import IntakeBatch, IntakeDocument, ScanStation, User
-from app.models.enums import IntakeDecision
+from app.models.enums import IntakeDecision, IntakeSource
 from app.services import audit
 from app.services.intake import REASON_TEXT, SEVERE_INDICATOR
 from app.timeutil import PH_TZ, as_utc, local_day_start, utcnow
@@ -54,7 +54,9 @@ def station_state(station: ScanStation, now: datetime) -> str:
 
 
 def _station_out(db: Session, station: ScanStation, now: datetime) -> dict:
-    has_intake = db.scalar(select(exists().where(IntakeDocument.station_id == station.id))) or \
+    has_intake = db.scalar(select(exists().where(
+        IntakeDocument.station_id == station.id,
+        IntakeDocument.source == IntakeSource.STATION))) or \
         db.scalar(select(exists().where(IntakeBatch.station_id == station.id)))
     return {"id": station.id, "name": station.name, "is_active": station.is_active,
             "state": station_state(station, now), "status": station.last_status,
@@ -129,10 +131,12 @@ def intake_live(station_id: int, limit: int = Query(10, ge=1, le=50),
         scope = IntakeDocument.batch_id == batch.id
     else:  # between batches: the station's latest pages (a batch is optional per page)
         scope = IntakeDocument.station_id == station.id
-    documents = db.scalars(select(IntakeDocument).where(scope)
+    # Online uploads read by this station's OCR worker never went through its trays.
+    paper = IntakeDocument.source == IntakeSource.STATION
+    documents = db.scalars(select(IntakeDocument).where(scope, paper)
                            .order_by(IntakeDocument.id.desc()).limit(limit))
     today = list(db.scalars(select(IntakeDocument).where(
-        IntakeDocument.station_id == station.id,
+        IntakeDocument.station_id == station.id, paper,
         IntakeDocument.created_at >= local_day_start(now.astimezone(PH_TZ).date()))))
     return {
         "station": _station_out(db, station, now),

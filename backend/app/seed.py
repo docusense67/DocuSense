@@ -70,6 +70,7 @@ def seed(db: Session) -> bool:
     _user(db, f"admin@{DOMAIN}", Role.ADMIN)
     registrar = _user(db, f"registrar@{DOMAIN}", Role.REGISTRAR, can_validate=True)
     teacher_user = _user(db, f"teacher@{DOMAIN}", Role.TEACHER)
+    _user(db, f"applicant@{DOMAIN}", Role.APPLICANT)  # online TOR/COE uploads (no record yet)
     teacher = Teacher(user_id=teacher_user.id, employee_number="EMP-0001",
                       full_name="Prof. Jose Rizal Mercado", department="College of Computing")
     program = Program(code="BSIT", name="Bachelor of Science in Information Technology",

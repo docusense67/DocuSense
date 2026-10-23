@@ -70,3 +70,44 @@ def compress_page(content: bytes, *, max_width: int, quality: int) -> tuple[byte
     if width <= max_width and len(content) <= len(compressed):
         return content, "png" if original_format == "PNG" else "jpg"
     return compressed, "jpg"
+
+
+def render_pdf_pages(content: bytes, *, max_pages: int, max_width: int,
+                     quality: int) -> list[tuple[bytes, str]]:
+    """Split an uploaded PDF (applicant intake) into grayscale JPEG pages, max_width wide.
+
+    Rendered straight at the target width, so a page never exists at full resolution in
+    memory. Password-protected, empty or oversized PDFs are refused."""
+    import pypdfium2 as pdfium  # only needed for applicant uploads
+
+    try:
+        pdf = pdfium.PdfDocument(content)
+    except pdfium.PdfiumError:
+        raise InvalidScanImage("The PDF could not be read (damaged or password-protected)") \
+            from None
+    try:
+        if len(pdf) == 0:
+            raise InvalidScanImage("The PDF has no pages")
+        if len(pdf) > max_pages:
+            raise InvalidScanImage(f"The PDF has more than {max_pages} pages")
+        pages = []
+        for index in range(len(pdf)):
+            page = pdf[index]
+            try:
+                width, height = page.get_size()  # points
+                if width <= 0 or height <= 0:
+                    raise InvalidScanImage("A PDF page could not be read")
+                scale = max_width / width
+                if (width * scale) * (height * scale) > MAX_PIXELS:
+                    raise InvalidScanImage("A PDF page is too large")
+                image = page.render(scale=scale, grayscale=True).to_pil().convert("L")
+            finally:
+                page.close()
+            out = io.BytesIO()
+            image.save(out, "JPEG", quality=quality, optimize=True)
+            pages.append((out.getvalue(), "jpg"))
+        return pages
+    except pdfium.PdfiumError:
+        raise InvalidScanImage("The PDF could not be read") from None
+    finally:
+        pdf.close()

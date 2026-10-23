@@ -28,6 +28,10 @@ STATION = {
     "POST /api/station/intake/batches/{batch_id}/end",
     "POST /api/station/intake/documents",
     "POST /api/station/intake/documents/{intake_id}/routed",
+    # applicant intake: the OCR worker reads online uploads (docs/applicant-intake.md)
+    "POST /api/station/applicant-jobs/claim",
+    "GET /api/station/applicant-jobs/{submission_id}/pages/{number}",
+    "POST /api/station/applicant-jobs/{submission_id}/complete",
 }
 
 # Called by the scheduler (Vercel Cron) with `Authorization: Bearer <ADGVS_CRON_SECRET>`, never
@@ -118,6 +122,24 @@ INTAKE_STAFF = {
     "POST /api/intake/documents/{intake_id}/link",
     "POST /api/intake/documents/{intake_id}/create-student",
     "POST /api/intake/documents/{intake_id}/unlink",
+    # applicant intake: applicant logins, the online submissions and their pages
+    "POST /api/applicants",
+    "GET /api/applicant-submissions",
+    "GET /api/applicant-submissions/{submission_id}/pages/{number}",
+    "POST /api/applicant-submissions/{submission_id}/retry",
+}
+
+# An applicant (not yet a student) only sends their own documents; no records. The catalog
+# (programs, subjects, terms) is not personal data and helps them choose a program.
+APPLICANT = ANY_USER | CATALOG | {
+    "GET /api/applicant/submissions",
+    "POST /api/applicant/submissions",
+    "GET /api/applicant/submissions/{submission_id}",
+    "POST /api/applicant/submissions/{submission_id}/pages",
+    "GET /api/applicant/submissions/{submission_id}/pages/{number}",
+    "DELETE /api/applicant/submissions/{submission_id}/pages/{number}",
+    "POST /api/applicant/submissions/{submission_id}/submit",
+    "POST /api/applicant/submissions/{submission_id}/withdraw",
 }
 
 REGISTRAR = ANY_USER | CATALOG | GRADES | USER_ADMIN | INTAKE_STAFF | {
@@ -183,6 +205,7 @@ ADMIN = ANY_USER | CATALOG | USER_ADMIN | INTAKE_STAFF | {
 }
 
 CALLERS = {
+    "applicant": APPLICANT,
     "maria.santos": STUDENT,
     "teacher": TEACHER,
     "registrar": REGISTRAR | VALIDATION | INTAKE_OPERATOR,

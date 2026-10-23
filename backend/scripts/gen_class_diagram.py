@@ -54,8 +54,9 @@ AREAS: dict[str, tuple[str, tuple[str, ...]]] = {
     "validation": ("Validation of printed documents and scan stations", (
         "scan_sessions", "scan_stations", "scanned_documents", "station_event_receipts",
         "validation_records")),
-    "intake": ("Incoming-document screening", (
-        "intake_batches", "intake_documents", "intake_settings")),
+    "intake": ("Incoming-document screening and applicant uploads", (
+        "applicant_pages", "applicant_submissions", "intake_batches", "intake_documents",
+        "intake_settings")),
     "audit": ("Audit trail and notifications", ("audit_logs", "notification_reads")),
 }
 

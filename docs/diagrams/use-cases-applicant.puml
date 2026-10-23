@@ -1,0 +1,65 @@
+@startuml use-cases-applicant
+' Use cases: applicant intake, documents from another school uploaded online
+' (docs/applicant-intake.md). Detail of the "applicant" package in use-cases.puml. Once read,
+' an upload joins the staff review of use-cases-intake-review.puml.
+'
+' "' @routes <alias>: <METHOD path> | ..." lists the API routes behind a use case.
+' backend/tests/test_use_case_diagram.py checks every actor link against
+' backend/tests/test_access_matrix.py: edit both together.
+' A use case that <<extend>>s another is also performed by that use case's actors.
+title DocuSense use cases: applicant intake (online uploads)
+left to right direction
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F8FC
+  BorderColor #2F5D8A
+}
+skinparam actor {
+  BorderColor #2F5D8A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #B8A200
+}
+
+actor "Applicant\n(not yet a student)" as Applicant
+actor "Registrar" as Registrar
+actor "Administrator" as Admin
+actor "Intake station\n(OCR worker)" as IntakeStation <<system>>
+
+rectangle "DocuSense" {
+  package "Applicant intake (online uploads)" {
+    usecase "Send a TOR or COE from\nanother school (consent,\nupload pages, submit)" as AP_SEND
+    ' @routes AP_SEND: GET /api/applicant/submissions | POST /api/applicant/submissions | GET /api/applicant/submissions/{submission_id} | POST /api/applicant/submissions/{submission_id}/pages | GET /api/applicant/submissions/{submission_id}/pages/{number} | DELETE /api/applicant/submissions/{submission_id}/pages/{number} | POST /api/applicant/submissions/{submission_id}/submit
+    usecase "Withdraw before it is read\n(pages deleted)" as AP_WITHDRAW
+    ' @routes AP_WITHDRAW: POST /api/applicant/submissions/{submission_id}/withdraw
+    usecase "Create applicant logins\n(no public sign-up)" as AP_LOGINS
+    ' @routes AP_LOGINS: POST /api/applicants
+    usecase "Follow uploads, view pages,\nqueue a failed one again" as AP_WATCH
+    ' @routes AP_WATCH: GET /api/applicant-submissions | GET /api/applicant-submissions/{submission_id}/pages/{number} | POST /api/applicant-submissions/{submission_id}/retry
+    usecase "Read an upload: OCR,\ndocument type, fields\n(lease; extracts only)" as AP_READ
+    ' @routes AP_READ: POST /api/station/applicant-jobs/claim | GET /api/station/applicant-jobs/{submission_id}/pages/{number} | POST /api/station/applicant-jobs/{submission_id}/complete
+    usecase "Decide: needs manual review\n(no reference layout yet)" as AP_DECIDE
+  }
+}
+
+Applicant -- AP_SEND
+Registrar -- AP_LOGINS
+Registrar -- AP_WATCH
+Admin -- AP_LOGINS
+Admin -- AP_WATCH
+AP_READ -- IntakeStation
+
+AP_SEND <.. AP_WITHDRAW : <<extend>>
+AP_READ ..> AP_DECIDE : <<include>>
+
+note as N1
+  The worker only extracts; the backend
+  decides. A read upload becomes an intake
+  document in the staff review queue; when
+  it is linked to a student, the applicant
+  login becomes that student's login.
+end note
+@enduml

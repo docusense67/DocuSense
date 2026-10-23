@@ -17,7 +17,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 staff = require_roles(Role.REGISTRAR, Role.ADMIN)
 
 # Section 4: registrars create students/teachers only; admins manage all accounts.
-REGISTRAR_MANAGEABLE = {Role.STUDENT, Role.TEACHER}
+REGISTRAR_MANAGEABLE = {Role.STUDENT, Role.TEACHER, Role.APPLICANT}
 
 
 def _ensure_can_manage(actor: User, target_role: Role) -> None:

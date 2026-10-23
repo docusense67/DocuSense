@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import (
+    applicant_intake,
     audit,
     auth,
     catalog,
@@ -90,7 +91,7 @@ async def security_headers(request: Request, call_next):
 app.include_router(auth.router, prefix="/api")
 for module in (users, students, catalog, grades, templates, requests, documents, stations,
                scanning, intake, intake_profiles, intake_operator, dashboard, audit,
-               internal, mechanism, notifications):
+               internal, mechanism, notifications, applicant_intake):
     app.include_router(module.router, prefix="/api")
 
 

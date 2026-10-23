@@ -77,6 +77,13 @@ class Settings(BaseSettings):
     scan_page_max_width: int = Field(1654, ge=600, le=5000)
     scan_page_jpeg_quality: int = Field(70, ge=30, le=95)
 
+    # Applicant intake (docs/applicant-intake.md). One upload request per page or PDF: the
+    # Vercel proxy refuses request bodies over 4.5 MB, so the cloud setup must stay below it.
+    applicant_upload_max_bytes: int = Field(4_000_000, ge=100_000, le=15_000_000)
+    applicant_max_pages: int = Field(12, ge=1, le=50)
+    applicant_lease_minutes: int = Field(10, ge=1, le=120)  # OCR worker lease on a submission
+    applicant_max_attempts: int = Field(3, ge=1, le=10)  # then the submission fails
+
     # Printed on every document. [Assumption] Placeholder values until the school confirms.
     institution_name: str = "Sample State University"
     institution_address: str = "Sample City, Philippines"

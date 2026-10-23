@@ -19,6 +19,7 @@ dependencies = [
     "weasyprint>=70",
     "httpx>=0.27",  # Supabase Storage REST API (ADGVS_STORAGE_BACKEND=supabase)
     "pillow>=10",  # scan page compression; also a WeasyPrint dependency
+    "pypdfium2>=4.30",  # applicant intake: split uploaded PDFs into page images
 ]
 
 [project.optional-dependencies]

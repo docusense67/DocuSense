@@ -32,7 +32,7 @@ NOT_A_USE_CASE = {"GET /api/health"} | matrix.INTERNAL  # probe; scheduler (no a
 # only the classes they advise (section_advisers), so it is drawn for the adviser.
 DOWNLOAD = {"POST /api/documents/{document_id}/download-link", "GET /api/files/{token}"}
 ROW_LEVEL_ONLY = {"Teacher": DOWNLOAD | {"GET /api/advisory"}, "Adviser": DOWNLOAD,
-                  "Admin": DOWNLOAD}
+                  "Admin": DOWNLOAD, "Applicant": DOWNLOAD}
 
 ROLES = ("Student", "Teacher", "Registrar", "Admin")
 ALLOWED = {
@@ -42,6 +42,7 @@ ALLOWED = {
     "Registrar": matrix.CALLERS["registrar-no-validation"],
     "Operator": matrix.CALLERS["registrar"],  # registrar with the validation permission
     "Admin": matrix.ADMIN,
+    "Applicant": matrix.APPLICANT,  # not yet a student (docs/applicant-intake.md)
     "ScanStation": matrix.STATION,
     "IntakeStation": matrix.STATION,
 }
@@ -151,7 +152,7 @@ def test_linked_actors_may_call_every_route_of_their_use_cases(model):
 
 
 @pytest.mark.parametrize("actor", ["Student", "Teacher", "Adviser", "Registrar", "Operator",
-                                   "Admin"])
+                                   "Admin", "Applicant"])
 def test_every_route_of_a_role_is_drawn_for_it(model, actor):
     roles = _ancestors(model, actor)
     covered = set().union(*(routes for case, routes in model.routes.items()

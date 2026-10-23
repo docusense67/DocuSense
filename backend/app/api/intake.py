@@ -27,6 +27,7 @@ from app.api.deps import client_ip, get_or_404, get_station, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.models import (
+    ApplicantSubmission,
     AuditLog,
     IntakeBatch,
     IntakeDocument,
@@ -39,6 +40,7 @@ from app.models.enums import (
     IntakeDecision,
     IntakeDocType,
     IntakeReviewAction,
+    IntakeSource,
     IntakeStatus,
     Role,
 )
@@ -250,7 +252,8 @@ def _routed_out(doc: IntakeDocument) -> dict:
 
 def _row(doc: IntakeDocument) -> dict:
     return {
-        "id": doc.id, "batch_id": doc.batch_id, "sequence": doc.sequence,
+        "id": doc.id, "source": doc.source, "submission_id": doc.submission_id,
+        "batch_id": doc.batch_id, "sequence": doc.sequence,
         "doc_type": doc.doc_type, "doc_type_confidence": doc.doc_type_confidence,
         "decision": doc.decision, "reasons": doc.reasons, "assigned_tray": doc.assigned_tray,
         "routed_tray": doc.routed_tray, "routing_jam": doc.routing_jam, "status": doc.status,
@@ -267,12 +270,16 @@ def intake_queue(
     batch_id: int | None = None,
     decision: IntakeDecision | None = None,
     student_id: int | None = None,
+    source: IntakeSource | None = None,
     limit: int = 100,
     _: User = Depends(staff),
     db: Session = Depends(get_db),
 ):
-    """Review queue, newest first. `student_id`: the documents linked to one student."""
+    """Review queue, newest first. `student_id`: the documents linked to one student;
+    `source`: paper from the station or online uploads (docs/applicant-intake.md)."""
     query = select(IntakeDocument)
+    if source is not None:
+        query = query.where(IntakeDocument.source == source)
     if student_id is not None:
         query = query.where(IntakeDocument.student_id == student_id)
     if state is not None:
@@ -303,9 +310,17 @@ def intake_detail(intake_id: int, _: User = Depends(staff), db: Session = Depend
         .order_by(AuditLog.id)).all()
     station = db.get(ScanStation, doc.station_id)
     student = db.get(Student, doc.student_id) if doc.student_id else None
+    submission = db.get(ApplicantSubmission, doc.submission_id) if doc.submission_id else None
+    applicant = db.get(User, submission.applicant_id) if submission else None
     return {
         **_row(doc),
         "station": station.name if station else None,
+        # Online uploads: every page is served by GET /applicant-submissions/{id}/pages/{n}.
+        "submission": {"id": submission.id, "pages": len(submission.pages),
+                       "declared_type": submission.declared_type,
+                       "issuing_school": submission.issuing_school,
+                       "applicant_email": applicant.email if applicant else None,
+                       "submitted_at": submission.submitted_at} if submission else None,
         "reasons_explained": [{"code": r, "text": screening.REASON_TEXT.get(r, r)}
                               for r in doc.reasons],
         "indicators": [i for i in result.get("indicators") or [] if isinstance(i, dict)],

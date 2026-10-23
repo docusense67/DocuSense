@@ -10,6 +10,7 @@ from app.models.academics import (
     Subject,
     Term,
 )
+from app.models.applicant import ApplicantPage, ApplicantSubmission
 from app.models.audit import AuditLog
 from app.models.documents import DocumentRequest, DocumentTemplate, GeneratedDocument
 from app.models.intake import IntakeBatch, IntakeDocument, IntakeSettings
@@ -24,6 +25,8 @@ from app.models.validation import (
 )
 
 __all__ = [
+    "ApplicantPage",
+    "ApplicantSubmission",
     "AuditLog",
     "ClassSection",
     "DocumentRequest",

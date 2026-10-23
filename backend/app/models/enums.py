@@ -6,6 +6,9 @@ class Role(StrEnum):
     TEACHER = "teacher"
     REGISTRAR = "registrar"
     ADMIN = "admin"
+    # Not yet a student: sends documents from another school online (docs/applicant-intake.md).
+    # The login becomes a student login when staff link a submission to a student.
+    APPLICANT = "applicant"
 
 
 class StudentStatus(StrEnum):
@@ -106,7 +109,29 @@ class IntakeDocType(StrEnum):
     JHS_REPORT_CARD = "jhs_report_card"
     GOOD_MORAL_CERTIFICATE = "good_moral_certificate"
     JHS_COMPLETION_CERTIFICATE = "jhs_completion_certificate"
+    # From another school, uploaded online by an applicant (docs/applicant-intake.md).
+    TRANSCRIPT_OF_RECORDS = "transcript_of_records"
+    CERTIFICATE_OF_ENROLLMENT = "certificate_of_enrollment"
     UNKNOWN = "unknown"
+
+
+class IntakeSource(StrEnum):
+    STATION = "station"  # paper fed through the intake station
+    ONLINE = "online"  # uploaded by an applicant, read by the OCR worker
+
+
+class ApplicantSubmissionStatus(StrEnum):
+    """draft -> queued -> processing -> screened (an intake document exists), or failed.
+
+    A failed submission (worker gave up after the retries) can be queued again by staff.
+    """
+
+    DRAFT = "draft"  # the applicant is still adding pages
+    QUEUED = "queued"  # waiting for the OCR worker
+    PROCESSING = "processing"  # a worker holds the lease
+    SCREENED = "screened"  # read; the intake document is in the staff review queue
+    FAILED = "failed"
+    WITHDRAWN = "withdrawn"  # by the applicant, before it was read
 
 
 class IntakeDecision(StrEnum):

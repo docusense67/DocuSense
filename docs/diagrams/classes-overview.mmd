@@ -27,13 +27,18 @@ classDiagram
     class ScannedDocument["ScannedDocument (scanned_documents)"]
     class StationEventReceipt["StationEventReceipt (station_event_receipts)"]
     class ValidationRecord["ValidationRecord (validation_records)"]
-    %% intake: Incoming-document screening
+    %% intake: Incoming-document screening and applicant uploads
+    class ApplicantPage["ApplicantPage (applicant_pages)"]
+    class ApplicantSubmission["ApplicantSubmission (applicant_submissions)"]
     class IntakeBatch["IntakeBatch (intake_batches)"]
     class IntakeDocument["IntakeDocument (intake_documents)"]
     class IntakeSettings["IntakeSettings (intake_settings)"]
     %% audit: Audit trail and notifications
     class AuditLog["AuditLog (audit_logs)"]
     class NotificationRead["NotificationRead (notification_reads)"]
+    ApplicantPage "*" --> "1" ApplicantSubmission : submission_id
+    ApplicantSubmission "*" --> "0..1" IntakeDocument : intake_document_id
+    ApplicantSubmission "*" --> "0..1" ScanStation : lease_station_id
     AuditLog "*" --> "0..1" User : user_id
     ClassSection "*" --> "1" Subject : subject_id
     ClassSection "*" --> "0..1" Teacher : teacher_id
@@ -49,6 +54,7 @@ classDiagram
     IntakeDocument "*" --> "0..1" IntakeBatch : batch_id
     IntakeDocument "*" --> "1" ScanStation : station_id
     IntakeDocument "*" --> "0..1" Student : student_id
+    IntakeDocument "*" --> "0..1" ApplicantSubmission : submission_id
     NotificationRead "*" --> "1" AuditLog : event_id
     NotificationRead "*" --> "1" User : user_id
     ScanSession "*" --> "0..1" ScanStation : station_id
@@ -63,4 +69,4 @@ classDiagram
     Teacher "0..1" --> "0..1" User : user_id
     UserSession "*" --> "1" User : user_id
     ValidationRecord "0..1" --> "1" ScannedDocument : scanned_document_id
-    note for User "Also referenced by 15 staff columns (created_by, reviewed_by, ...),<br>shown in the area diagrams"
+    note for User "Also referenced by 16 staff columns (created_by, reviewed_by, ...),<br>shown in the area diagrams"
