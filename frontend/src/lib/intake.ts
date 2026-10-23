@@ -1,7 +1,49 @@
-import type { IntakeDecision, IntakeDocType, IntakeStatus } from '../api'
+import type { IntakeDecision, IntakeDocType, IntakeStatus, ReferenceLabel, ReferenceStatus, ReferenceUse, SecondPassStatus } from '../api'
 
 // Wording rule (screening contract): "passed screening" / "needs manual review".
-// Never "authentic", "genuine" or "verified".
+// Never "authentic", "genuine" or "verified". One exception: the dataset labels of reference
+// samples ("Genuine sample" / "Altered sample"), always shown with REFERENCE_NOTE.
+
+export const REFERENCE_NOTE =
+  'Reference samples are the school’s own labelled examples. A match with a reference sample is not proof of ' +
+  'authenticity: it only means no automatic check flagged the upload. Staff make the decision.'
+
+export const REFERENCE_LABEL: Record<ReferenceLabel, string> = {
+  genuine_sample: 'Genuine sample (dataset label)',
+  altered_sample: 'Altered sample (dataset label)',
+  other: 'Other document (not a TOR/COE)',
+}
+
+export const REFERENCE_USE: Record<ReferenceUse, string> = {
+  training: 'Training (compared with, trains the models)',
+  held_out: 'Held-out (evaluation only)',
+}
+
+export const REFERENCE_STATUS: Record<ReferenceStatus, string> = {
+  queued: 'Waiting to be read',
+  processing: 'Being read',
+  pending: 'Read: waiting for approval',
+  approved: 'Approved',
+  retired: 'Retired',
+  failed: 'Could not be read',
+}
+
+export const SECOND_PASS_STATUS: Record<SecondPassStatus, string> = {
+  queued: 'Second reading queued',
+  processing: 'Second reading in progress',
+  done: 'Second reading done',
+  failed: 'Second reading failed',
+}
+
+/** Findings of the comparison with the reference sample (backend services/applicant_references). */
+export const FINDING_LABEL: Record<string, string> = {
+  reference_field_missing: 'Field missing',
+  layout_not_measured: 'Layout not measured',
+  page_count_differs: 'Page count differs',
+  layout_shifted: 'Heading or label moved',
+  reference_regions_missing: 'Headings or labels not found',
+  text_spacing_differs: 'Text size or spacing differs',
+}
 
 export const DOC_TYPE_LABEL: Record<IntakeDocType, string> = {
   psa_birth_certificate: 'PSA birth certificate',

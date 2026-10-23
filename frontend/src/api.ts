@@ -357,8 +357,10 @@ export interface IntakeDetail extends IntakeRow {
   /** Online uploads: every page is served by api.applicantPageUrl. */
   submission: {
     id: number; pages: number; declared_type: IntakeDocType; issuing_school: string
-    applicant_email: string | null; submitted_at: string | null
+    applicant_email: string | null; uploaded_by: string | null; submitted_at: string | null
   } | null
+  assessment: IntakeAssessment | null
+  second_pass: SecondPassView | null
   predicted_doc_type: string | null
   reasons_explained: { code: string; text: string }[]
   indicators: IntakeIndicator[]
@@ -430,12 +432,110 @@ export interface ApplicantSubmission {
   created_at: string
   submitted_at: string | null
 }
+export type SecondPassStatus = 'queued' | 'processing' | 'done' | 'failed'
 export interface StaffApplicantSubmission extends ApplicantSubmission {
+  applicant_id: number
   applicant_email: string | null
+  /** Set when registrar staff created it on the applicant's behalf. */
+  uploaded_by: string | null
   attempts: number
   error: string | null
   intake_document_id: number | null
   lease_expires_at: string | null
+  second_pass_status: SecondPassStatus | null
+  second_pass_disagreements: number
+}
+export type ReportFormat = 'json' | 'csv' | 'pdf'
+
+/** A student's past online submissions (read-only, plain status). */
+export interface ApplicationHistoryItem {
+  id: number
+  declared_type: ApplicantDocType
+  issuing_school: string
+  status_text: string
+  submitted_at: string | null
+}
+
+// Reference samples per issuing school (docs/applicant-intake.md, "References"). The labels
+// are dataset labels; a match with a reference sample is not proof of authenticity.
+export type ReferenceLabel = 'genuine_sample' | 'altered_sample' | 'other'
+export type ReferenceUse = 'training' | 'held_out'
+export type ReferenceStatus = 'queued' | 'processing' | 'pending' | 'approved' | 'retired' | 'failed'
+export interface ReferenceRules {
+  required_fields: string[]
+  field_labels: Record<string, string[]>
+  layout_tolerance: number
+}
+export interface ApplicantReference {
+  id: number
+  issuing_school: string
+  school_key: string
+  doc_type: ApplicantDocType | 'unknown'
+  label: ReferenceLabel
+  use: ReferenceUse
+  version: number
+  replaces_id: number | null
+  status: ReferenceStatus
+  status_reason: string | null
+  rules: ReferenceRules | null
+  pages: number
+  attempts: number
+  error: string | null
+  created_by: string | null
+  created_at: string
+  decided_by: string | null
+  decided_at: string | null
+  read: boolean
+  measured_pages: number
+  reading?: { doc_type?: { predicted?: string; confidence?: number; model?: string }; fields?: Record<string, { value?: string | null }>; pages?: { page: number; ocr_text: string }[] } | null
+  note?: string
+}
+
+/** Backend comparison of an online upload with the school's reference sample. */
+export interface IntakeAssessment {
+  reference: { id: number; version: number; issuing_school: string; doc_type: string; layout_tolerance: number; required_fields: string[] } | null
+  findings: ({ code: string } & Record<string, unknown>)[]
+  layout_model: { status: 'unavailable' | 'evaluated'; reason?: string; label?: ReferenceLabel; confidence?: number; version?: string; held_out_count?: number; held_out_accuracy?: number | null }
+  reasons: string[]
+}
+export interface SecondPassView {
+  status: SecondPassStatus
+  attempts: number
+  error: string | null
+  created_at: string
+  completed_at: string | null
+  engine: string | null
+  fields: Record<string, string | null> | null
+  disagreements: { field: string; first: string | null; second: string | null }[]
+}
+
+// Per-student advisers (one teacher per student and term), distinct from class advisers (S-08).
+export interface StudentAdviserRow {
+  id: number
+  student_id: number
+  student_number: string
+  student_name: string
+  term_id: number
+  term: string
+  teacher_id: number
+  teacher_name: string
+  assigned_at: string
+}
+export interface AdviserOptions {
+  students: { id: number; student_number: string; name: string }[]
+  teachers: { id: number; name: string }[]
+  terms: { id: number; name: string; is_current: boolean }[]
+}
+export interface MyAdviser { term_id: number; term: string; is_current: boolean; teacher_name: string; department: string | null }
+export interface Advisee {
+  student_id: number
+  student_number: string
+  student_name: string
+  program_code: string | null
+  year_level: number | null
+  term_id: number
+  term: string
+  is_current: boolean
 }
 
 export interface IntakeThresholds {
@@ -648,6 +748,33 @@ export const api = {
   retrySubmission: (id: number, reason: string) =>
     post<StaffApplicantSubmission>(`/applicant-submissions/${id}/retry`, { reason }),
   applicantPageUrl: (id: number, page: number) => `/api/applicant-submissions/${id}/pages/${page}`,
+  submissionReportUrl: (id: number, format: ReportFormat) => `/api/applicant-submissions/${id}/report${qs({ format })}`,
+  // ... on an applicant login's behalf (audited)
+  staffStartSubmission: (body: { applicant_id: number; declared_type: ApplicantDocType; issuing_school: string; consent: boolean }) =>
+    post<StaffApplicantSubmission>('/applicant-submissions', body),
+  staffUploadPage: (id: number, file: File) => upload<StaffApplicantSubmission>(`/applicant-submissions/${id}/pages`, file),
+  staffDeletePage: (id: number, page: number) =>
+    request<StaffApplicantSubmission>(`/applicant-submissions/${id}/pages/${page}`, { method: 'DELETE' }),
+  staffSubmit: (id: number) => post<StaffApplicantSubmission>(`/applicant-submissions/${id}/submit`),
+  applicantLogins: () => request<User[]>('/users?role=applicant'),
+  // reference samples
+  references: (state?: ReferenceStatus | '') => request<ApplicantReference[]>(`/applicant-references${qs({ state })}`),
+  reference: (id: number) => request<ApplicantReference>(`/applicant-references/${id}`),
+  uploadReference: (form: FormData) => request<ApplicantReference>('/applicant-references', { method: 'POST', body: form }),
+  editReference: (id: number, body: { label?: ReferenceLabel; use?: ReferenceUse; rules?: ReferenceRules; reason?: string }) =>
+    patch<ApplicantReference>(`/applicant-references/${id}`, body),
+  approveReference: (id: number, reason: string) => post<ApplicantReference>(`/applicant-references/${id}/approve`, { reason }),
+  retireReference: (id: number, reason: string) => post<ApplicantReference>(`/applicant-references/${id}/retire`, { reason }),
+  retryReference: (id: number, reason: string) => post<ApplicantReference>(`/applicant-references/${id}/retry`, { reason }),
+  referencePageUrl: (id: number, page: number) => `/api/applicant-references/${id}/pages/${page}`,
+  // per-student advisers
+  studentAdvisers: (termId?: number) => request<StudentAdviserRow[]>(`/student-advisers${qs({ term_id: termId })}`),
+  adviserOptions: () => request<AdviserOptions>('/student-advisers/options'),
+  setStudentAdviser: (body: { student_id: number; term_id: number; teacher_id: number | null; reason: string }) =>
+    put<StudentAdviserRow | null>('/student-advisers', body),
+  myAdvisers: () => request<MyAdviser[]>('/students/me/advisers'),
+  advisees: () => request<Advisee[]>('/advisees'),
+  myApplications: () => request<ApplicationHistoryItem[]>('/students/me/applications'),
 
   // admin
   users: () => request<User[]>('/users'),

@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import { AdminHome } from './pages/admin/AdminHome'
 import { IntakeSettingsPage } from './pages/admin/IntakeSettings'
 import { ApplicantHome } from './pages/applicant/ApplicantHome'
+import { Advisers } from './pages/Advisers'
 import { AuditTrail } from './pages/AuditTrail'
 import { ChangePassword, Login } from './pages/Auth'
 import { IntakeStationPage } from './pages/operator/IntakeStation'
@@ -14,12 +15,14 @@ import { Applicants } from './pages/registrar/Applicants'
 import { IntakeQueue } from './pages/registrar/IntakeQueue'
 import { IntakeReview } from './pages/registrar/IntakeReview'
 import { Records } from './pages/registrar/Records'
+import { References } from './pages/registrar/References'
 import { Setup } from './pages/registrar/Setup'
 import { StudentRecord } from './pages/registrar/StudentRecord'
 import { RegistrarHome } from './pages/registrar/RegistrarHome'
 import { RequestList } from './pages/registrar/RequestList'
 import { RequestReview } from './pages/registrar/RequestReview'
 import { Templates } from './pages/registrar/Templates'
+import { ApplicationHistory } from './pages/student/ApplicationHistory'
 import { StudentHome } from './pages/student/StudentHome'
 import { TeacherHome } from './pages/teacher/TeacherHome'
 
@@ -46,15 +49,22 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout user={user} />}>
-          {user.role === 'student' && <Route index element={<StudentHome />} />}
+          {user.role === 'student' && (
+            <>
+              <Route index element={<StudentHome />} />
+              <Route path="applications" element={<ApplicationHistory />} />
+            </>
+          )}
           {user.role === 'teacher' && <Route index element={<TeacherHome />} />}
           {user.role === 'applicant' && <Route index element={<ApplicantHome />} />}
+          {user.role !== 'applicant' && <Route path="advisers" element={<Advisers user={user} />} />}
           {user.role === 'admin' && (
             <>
               <Route index element={<AdminHome />} />
               <Route path="overview" element={<RegistrarHome readOnly />} />
               <Route path="audit" element={<AuditTrail />} />
               <Route path="intake-settings" element={<IntakeSettingsPage />} />
+              <Route path="references" element={<References />} />
             </>
           )}
           {user.role === 'registrar' && (
@@ -65,6 +75,7 @@ export default function App() {
               <Route path="intake" element={<IntakeQueue />} />
               <Route path="intake/:id" element={<IntakeReview />} />
               <Route path="applicants" element={<Applicants />} />
+              <Route path="references" element={<References />} />
               <Route path="records" element={<Records />} />
               <Route path="records/students/:id" element={<StudentRecord />} />
               <Route path="setup" element={<Setup />} />

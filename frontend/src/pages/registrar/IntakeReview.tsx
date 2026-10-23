@@ -5,7 +5,10 @@ import { api, type IntakeAction, type IntakeDetail } from '../../api'
 import { Button, Card, Empty, ErrorText, Field, Page, Table, Td } from '../../components/ui'
 import { describe } from '../../lib/audit'
 import { formatDate } from '../../lib/format'
-import { DOC_TYPE_LABEL, QUALITY_ISSUE_LABEL, indicatorLabel, percent } from '../../lib/intake'
+import {
+  DOC_TYPE_LABEL, FINDING_LABEL, QUALITY_ISSUE_LABEL, REFERENCE_NOTE, SECOND_PASS_STATUS, indicatorLabel, percent,
+} from '../../lib/intake'
+import { ReportLinks } from './Applicants'
 import { DecisionBadge, IntakeStatusBadge, TrayCell } from './IntakeBadges'
 import { StudentData } from './IntakeStudentData'
 
@@ -75,6 +78,70 @@ function ExtractedFields({ d }: { d: IntakeDetail }) {
           </tr>
         ))}
       </Table>
+    </Card>
+  )
+}
+
+/** Online uploads: the backend's comparison with the school's reference sample. */
+function Assessment({ d }: { d: IntakeDetail }) {
+  const a = d.assessment
+  if (!a) return null
+  const model = a.layout_model
+  const detail = (f: Record<string, unknown>) => Object.entries(f)
+    .filter(([k]) => k !== 'code')
+    .map(([k, v]) => `${k.replaceAll('_', ' ')}: ${Array.isArray(v) ? v.join(', ') : String(v)}`).join(' · ')
+  return (
+    <Card title="Comparison with the school's reference sample">
+      <div className="space-y-2 text-sm" data-testid="intake-assessment">
+        {a.reference
+          ? <p className="text-ink">Reference #{a.reference.id}, version {a.reference.version} ({a.reference.issuing_school}); layout tolerance {a.reference.layout_tolerance}.</p>
+          : <p className="text-ink">No approved reference sample for this school and type: <Link to="/references" className="text-accent hover:underline">add one</Link>.</p>}
+        {a.findings.length > 0 && (
+          <ul className="space-y-1" data-testid="intake-findings">
+            {a.findings.map((f, i) => (
+              <li key={i}><span className="font-medium text-ink">! {FINDING_LABEL[f.code] ?? f.code.replaceAll('_', ' ')}</span>
+                <span className="text-xs text-ink-2"> · {detail(f)}</span></li>
+            ))}
+          </ul>
+        )}
+        {a.reference && a.findings.length === 0 && <p className="text-ink-2">No difference from the reference sample was found.</p>}
+        <p className="text-xs text-ink-2" data-testid="intake-layout-model">
+          Layout model: {model.status === 'evaluated'
+            ? `preliminary placement with the ${model.label === 'genuine_sample' ? 'genuine' : 'altered'} samples (${percent(model.confidence)}; ${model.version}; held-out ${model.held_out_count ?? 0}${model.held_out_accuracy != null ? `, ${percent(model.held_out_accuracy)} right` : ''})`
+            : `not used (${model.reason ?? 'unavailable'})`}
+        </p>
+        <p className="text-xs text-muted">{REFERENCE_NOTE}</p>
+      </div>
+    </Card>
+  )
+}
+
+/** Online uploads: the second OCR pass after acceptance, and where it disagrees with the first. */
+function SecondPass({ d }: { d: IntakeDetail }) {
+  const s = d.second_pass
+  if (!d.submission) return null
+  return (
+    <Card title="Second reading" actions={<ReportLinks id={d.submission.id} />}>
+      {!s ? <p className="text-sm text-ink-2">Queued when the document is accepted.</p> : (
+        <div className="space-y-2 text-sm" data-testid="intake-second-pass" data-status={s.status}>
+          <p className="text-ink">{SECOND_PASS_STATUS[s.status]}{s.completed_at && ` · ${formatDate(s.completed_at, true)}`}
+            {s.engine && <span className="text-xs text-ink-2"> · {s.engine}</span>}</p>
+          {s.error && <p className="text-xs text-critical">{s.error}</p>}
+          {s.status === 'done' && (s.disagreements.length === 0
+            ? <p className="text-ink-2">Both readings agree on every field.</p>
+            : (
+              <Table head={['Field', 'First reading', 'Second reading']}>
+                {s.disagreements.map((x) => (
+                  <tr key={x.field} data-testid="intake-disagreement">
+                    <Td className="font-semibold text-critical">! {x.field.replaceAll('_', ' ')}</Td>
+                    <Td className="num">{x.first ?? '—'}</Td>
+                    <Td className="num">{x.second ?? '—'}</Td>
+                  </tr>
+                ))}
+              </Table>
+            ))}
+        </div>
+      )}
     </Card>
   )
 }
@@ -169,6 +236,7 @@ export function IntakeReview() {
               <p className="text-sm text-ink-2">
                 Uploaded online by {d.submission.applicant_email ?? 'an applicant'} as {DOC_TYPE_LABEL[d.submission.declared_type]}{' '}
                 from {d.submission.issuing_school}.
+                {d.submission.uploaded_by && <> Uploaded on their behalf by {d.submission.uploaded_by}.</>}
               </p>
               {Array.from({ length: d.submission.pages }, (_, i) => i + 1).map((page) => (
                 <a key={page} href={api.applicantPageUrl(d.submission!.id, page)} target="_blank" rel="noopener">
@@ -189,6 +257,13 @@ export function IntakeReview() {
           <Measurements d={d} />
         </div>
       </div>
+
+      {d.submission && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Assessment d={d} />
+          <SecondPass d={d} />
+        </div>
+      )}
 
       <StudentData d={d} />
 

@@ -11,21 +11,25 @@ const ROLE_LABEL: Record<User['role'], string> = {
 function navFor(user: User): { to: string; label: string }[] {
   switch (user.role) {
     case 'student':
-      return [{ to: '/', label: 'My documents' }]
+      return [{ to: '/', label: 'My documents' }, { to: '/applications', label: 'Application history' },
+        { to: '/advisers', label: 'My adviser' }]
     case 'teacher':
-      return [{ to: '/', label: 'My classes' }]
+      return [{ to: '/', label: 'My classes' }, { to: '/advisers', label: 'My advisees' }]
     case 'applicant':
       return [{ to: '/', label: 'My documents' }]
     case 'admin':
       return [{ to: '/', label: 'Accounts & stations' }, { to: '/overview', label: 'Overview' },
-        { to: '/intake-settings', label: 'Screening thresholds' }, { to: '/audit', label: 'Audit trail' }]
+        { to: '/intake-settings', label: 'Screening thresholds' }, { to: '/references', label: 'Reference samples' },
+        { to: '/advisers', label: 'Advisers' }, { to: '/audit', label: 'Audit trail' }]
     case 'registrar': {
       const items = [
         { to: '/', label: 'Dashboard' },
         { to: '/requests', label: 'Requests' },
         { to: '/intake', label: 'Incoming documents' },
         { to: '/applicants', label: 'Applicants' },
+        { to: '/references', label: 'Reference samples' },
         { to: '/records', label: 'Records' },
+        { to: '/advisers', label: 'Advisers' },
         { to: '/setup', label: 'Academic setup' },
         { to: '/templates', label: 'Templates' },
       ]
