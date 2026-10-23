@@ -341,6 +341,9 @@ else
     rm -f "$CAMERA_DROPIN"
 fi
 install -m 644 "$SRC/deploy/station/$INTAKE_UNIT" "/etc/systemd/system/$INTAKE_UNIT"
+# Applicant intake OCR worker (docs/applicant-intake.md): installed, enabled by hand.
+install -m 644 "$SRC/deploy/station/adgvs-applicant-worker.service" \
+    /etc/systemd/system/adgvs-applicant-worker.service
 systemctl daemon-reload
 # One of the two services runs: the SANE validation station or the intake station.
 if [ "$INTAKE" = 1 ]; then

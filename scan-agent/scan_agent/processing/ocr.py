@@ -72,7 +72,8 @@ def _sparse_candidate(image: np.ndarray, timeout: float) -> tuple[str, float]:
         return '', 0
     # Short labels such as LTE or WIFI are still legitimate readable text.
     text = '\n'.join(' '.join(words) for words in lines.values())
-    return text, sum(count * confidence for count, confidence in zip(counts, confidences))
+    return text, sum(count * confidence
+                     for count, confidence in zip(counts, confidences, strict=True))
 
 
 def ocr_page_text(page: np.ndarray) -> str:

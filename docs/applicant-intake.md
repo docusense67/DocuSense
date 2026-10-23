@@ -20,7 +20,7 @@ means a document is authentic; staff make the decision.
 | Part | State |
 |---|---|
 | Backend: API, rules, migration `a9d4e2c7b1f5`, tests (`tests/test_applicant_intake.py`) | done |
-| OCR worker on the station (`scan-agent`) | to do |
+| OCR worker on the station (`scan_agent/applicant_worker.py`, `adgvs-applicant-worker.service`, tests `scan-agent/tests/test_applicant_worker.py`) | done |
 | Web app: applicant upload page, multi-page view for staff, applicant logins | to do |
 
 **Phase 2** is a separate decision. It covers reference layouts for each school (which would
@@ -100,9 +100,33 @@ They never see staff notes, the reasons or the reading.
 ## Running the worker
 
 The worker reads submissions from the API. In the cloud setup it talks to Render directly,
-like the scan station, because page downloads are too large for the Vercel proxy. It needs
-Tesseract and the scan-agent dependencies, and uses the registered station key. See the
-scan-agent README once the worker has been added.
+like the scan station, because page downloads are too large for the Vercel proxy.
+
+On the Pi, `pi-setup.sh` installs the unit but doesn't enable it. The worker uses the
+station's settings file, `/etc/adgvs/station.env`: `ADGVS_SERVER` (the Render API address in
+the cloud setup), `ADGVS_STATION_KEY` and `TESSERACT_CMD`.
+
+```bash
+sudo systemctl enable --now adgvs-applicant-worker
+journalctl -u adgvs-applicant-worker -f
+```
+
+On any machine with the scan-agent installed:
+
+```bash
+python -m scan_agent.applicant_worker --server https://adgvs-api.onrender.com --key <station key>
+python -m scan_agent.applicant_worker --once ...   # one job, then exit
+```
+
+How it reads a submission:
+- It runs Tesseract on each page locally, and nothing is sent to a cloud service.
+- A small Naive Bayes model, trained on a synthetic keyword corpus, classifies the document as
+  TOR, COE or unknown. Its confidence feeds the backend's low-confidence rule.
+- It finds fields by their printed labels: name, student number, program, school year, date
+  issued. The school name comes from the letterhead.
+- A page with too little readable text sets `quality.ok = false`.
+
+Without a running worker, submissions stay queued; nothing is lost.
 
 ## Decisions for the school
 

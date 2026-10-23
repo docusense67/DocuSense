@@ -26,6 +26,7 @@ The agent only **extracts**. The backend decides the result (`backend/app/servic
 | Page clean-up, QR, OCR, parsing | Software | `scan_agent/processing/` |
 | Bulk splitting, extraction | Software | `scan_agent/pipeline.py` |
 | Backend client, CLI | Software | `scan_agent/client.py`, `scan_agent/__main__.py` |
+| Applicant intake OCR worker (online TOR/COE uploads, [docs](../docs/applicant-intake.md)) | Software | `scan_agent/applicant_worker.py`, `scan_agent/processing/applicant.py` |
 
 A hardware source only has to implement `PageSource`: report `status()` and yield `CapturedPage` objects (300 DPI grayscale) in feed order. On a jam it raises `ScannerError(state, next_sequence)`, and the run can resume with `--start-sequence`.
 

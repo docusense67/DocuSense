@@ -56,3 +56,6 @@ deploy/station/local.env
 # Station runtime diagnostics (private; never source assets).
 deploy/station/mechanism/.hardware-health.json
 deploy/station/mechanism/.hardware-health.tmp
+
+# Claude Code agent worktrees (local only)
+.claude/worktrees/
