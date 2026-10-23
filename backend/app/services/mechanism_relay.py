@@ -262,8 +262,13 @@ def take_commands(db: Session, station_id: int, now: datetime) -> list[dict]:
 
 def poll_commands(db: Session, station_id: int, wait_seconds: float) -> dict:
     """Long-poll: return as soon as there are commands (or something changed), else after
-    `wait_seconds`. The session is committed before each wait, so no connection is held."""
-    deadline = monotonic() + max(0.0, min(wait_seconds, MAX_POLL_WAIT_SECONDS))
+    `wait_seconds`. The session is committed before each wait, so no connection is held.
+
+    `held_for` is how long the API held the poll: the relay counts expiry and operator freshness
+    from (its send time + held_for), not from the send time, else a command that arrived late in
+    a long poll would already look expired there."""
+    started = monotonic()
+    deadline = started + max(0.0, min(wait_seconds, MAX_POLL_WAIT_SECONDS))
     while True:
         seen = commands_signal.generation(station_id)
         commands = take_commands(db, station_id, utcnow())
@@ -276,7 +281,7 @@ def poll_commands(db: Session, station_id: int, wait_seconds: float) -> dict:
             commands = take_commands(db, station_id, utcnow())
         payload = control_payload(state_row(db, station_id), utcnow())
         db.commit()
-        return {"commands": commands, **payload}
+        return {"commands": commands, **payload, "held_for": round(monotonic() - started, 3)}
 
 
 def wait_for_results(db: Session, ids: list[int], station_id: int,

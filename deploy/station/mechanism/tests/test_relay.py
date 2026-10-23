@@ -86,6 +86,12 @@ class PureRuleTests(unittest.TestCase):
         self.assertEqual(relay.command_deadline("x", 10.0), 10.0)
         self.assertEqual(relay.command_deadline(float("nan"), 10.0), 10.0)
 
+    def test_answer_time_adds_the_poll_hold_but_never_the_network_time(self):
+        self.assertEqual(relay.answer_time(10.0, 15.0, 26.0), 25.0)
+        self.assertEqual(relay.answer_time(10.0, 30.0, 26.0), 26.0)  # never after arrival
+        for value in (None, "x", -1, 0, float("nan")):
+            self.assertEqual(relay.answer_time(10.0, value, 26.0), 10.0)
+
     def test_expired_commands_never_run_but_stop_always_does(self):
         self.assertTrue(relay.is_runnable("test-motor", 15.0, 14.9))
         self.assertFalse(relay.is_runnable("test-motor", 15.0, 15.0))
@@ -170,6 +176,31 @@ class RelayTests(unittest.TestCase):
             clock.now += 6
             return original(wait)
         api.commands = slow_poll
+        r.poll_once()
+        self.assertEqual(bridge.actions, [])
+        self.assertEqual(api.results, [(1, {"ok": False, "error": "expired"})])
+
+    def test_a_command_that_arrived_late_in_a_long_poll_still_runs(self):
+        r, clock, bridge, api = make()
+        original = api.commands
+
+        def long_poll(wait):  # held 15 s by the API, then a fresh command arrived
+            clock.now += 15.2
+            api.queue = [{"id": 1, "action": "test-motor", "params": {}, "expires_in": 5}]
+            return {**original(wait), "held_for": 15.0}
+        api.commands = long_poll
+        r.poll_once()
+        self.assertEqual(bridge.actions, [{"action": "test-motor"}])
+
+    def test_network_time_is_never_added_to_a_commands_life(self):
+        r, clock, bridge, api = make()
+        api.queue = [{"id": 1, "action": "test-motor", "params": {}, "expires_in": 5}]
+        original = api.commands
+
+        def slow_network(wait):  # held only 0.5 s, but the answer took 6 s to arrive
+            clock.now += 6
+            return {**original(wait), "held_for": 0.5}
+        api.commands = slow_network
         r.poll_once()
         self.assertEqual(bridge.actions, [])
         self.assertEqual(api.results, [(1, {"ok": False, "error": "expired"})])

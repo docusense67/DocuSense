@@ -67,9 +67,11 @@ These move real motors. The rules are pure, unit-tested functions:
 `deploy/station/mechanism/relay.py` (`deploy/station/mechanism/tests/test_relay.py`).
 
 1. **Command expiry.** Every movement command expires 5 seconds after it was requested. The
-   API never delivers an expired command, and tells the relay how many seconds are left; the
-   relay counts them from when it sent its poll, on its own clock, so a slow network or a
-   clock difference can only shorten a command's life. An expired command is never run, and
+   API never delivers an expired command, and tells the relay how many seconds are left and
+   how long it held the long poll (`held_for`). The relay counts the seconds left from when it
+   sent its poll plus `held_for`, on its own clock and never from later than the answer
+   arrived, so a slow network or a clock difference can only shorten a command's life (a
+   command that arrived late in a long poll still gets its full life). An expired command is never run, and
    the operator gets "did not confirm in time".
 2. **Stop first.** `stop` and `disconnect` never expire and are delivered and run first. A
    movement command queued before a newer stop is dropped ("superseded"), on the API and

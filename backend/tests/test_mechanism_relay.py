@@ -341,6 +341,8 @@ def test_heartbeat_freshness_is_delivered_with_commands(setup):
     s = setup
     s.report()
     poll = s.station_call("GET", "/commands").json()
+    # held_for: how long the API held the poll; the relay counts expiry from send + held_for.
+    assert 0 <= poll.pop("held_for") < 1
     assert poll == {"commands": [], "operator_fresh_for": 0.0, "viewer_active": False}
     s.as_user("op1")
     res = s.client.post("/api/mechanism/command", json={"action": "heartbeat"})

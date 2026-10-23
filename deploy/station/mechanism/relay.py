@@ -12,7 +12,8 @@ Safety (the pure functions below are unit-tested in tests/test_relay.py):
 - Local opt-in: without --allow-remote (or ADGVS_MECHANISM_REMOTE=1) the relay only reports
   state and runs stop / disconnect; every movement command is refused.
 - Command expiry: the API gives each command its remaining life in seconds. The relay counts
-  it from when it SENT the poll (on its own clock) and never runs an expired command. stop and
+  it from when it sent the poll plus how long the API held the poll (`held_for`), on its own
+  clock, never from later than that, and never runs an expired command. stop and
   disconnect never expire and run first; movement queued before a stop is dropped.
 - Dead-man: the bridge stops its outputs when it gets no heartbeat for 4 s. The relay forwards
   a heartbeat only while the API says the controlling operator's own heartbeat is fresh
@@ -67,6 +68,20 @@ def command_deadline(expires_in, sent_at):
     if seconds != seconds:  # NaN
         return sent_at
     return sent_at + max(0.0, seconds)
+
+
+def answer_time(sent_at, held_for, received_at):
+    """When (local clock) a long-poll answer was produced: send time plus how long the API held
+    the poll, never later than its arrival. Expiry and freshness count from here, so a command
+    that arrived late in a long poll is not mistaken for an old one, and nothing is ever
+    counted from later than it really happened (the request's network time is not added)."""
+    try:
+        held = float(held_for)
+    except (TypeError, ValueError):
+        return sent_at
+    if not held > 0:  # also NaN
+        return sent_at
+    return min(sent_at + held, received_at)
 
 
 def is_runnable(action, deadline, now):
@@ -343,8 +358,9 @@ class Relay:
         return outcomes
 
     def report_result(self, command, outcome):
+        sent_at = self.clock()  # freshness counts from when the request was SENT, never later
         try:
-            self.control(self.api.result(command.get("id"), outcome), self.clock())
+            self.control(self.api.result(command.get("id"), outcome), sent_at)
         except (Refused, Unavailable) as error:
             log.warning("Could not report the result of command %s: %s",
                         command.get("id"), error)
@@ -398,7 +414,7 @@ class Relay:
     def poll_once(self, wait=POLL_WAIT):
         sent_at = self.clock()
         answer = self.api.commands(wait)
-        return self.handle(answer, sent_at)
+        return self.handle(answer, answer_time(sent_at, answer.get("held_for"), self.clock()))
 
     def run(self, stopped):
         def poll_loop():
