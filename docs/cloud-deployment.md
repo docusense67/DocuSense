@@ -134,6 +134,9 @@ Supabase Dashboard → project `xbirhmmdctcqniwbbccy`.
    settings listed in `.env.example`. Add these in the dashboard. A variable that has a fixed
    `value` in `render.yaml` is set back to that value when the Blueprint syncs, so change those
    in the file instead.
+6. Optional, Pi camera station motors from the cloud site: `ADGVS_MECHANISM_MODE=relay` and
+   `ADGVS_MECHANISM_STATION_ID=<camera station id>`, plus the relay on the Pi
+   ([cloud-motor-control.md](cloud-motor-control.md)).
 
 ## 5. Vercel (the web app)
 

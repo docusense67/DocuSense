@@ -171,12 +171,21 @@ def test_supabase_data_api_lockdown_keeps_the_app_login_working():
                 "INSERT INTO intake_batches (station_id, total_docs, passed_count, "
                 "manual_review_count) SELECT id, 0, 0, 0 FROM scan_stations"))
             conn.execute(text("UPDATE intake_settings SET min_layout_score = 0.7"))
+            # cloud motor control (b6f2d8e4c1a7): the relay's queue and station state
+            conn.execute(text(
+                "INSERT INTO mechanism_commands (station_id, action, params) "
+                "SELECT id, 'STOP', '{}' FROM scan_stations"))
+            conn.execute(text(
+                "INSERT INTO mechanism_station_states (station_id, remote_allowed) "
+                "SELECT id, false FROM scan_stations"))
         with app_engine.connect() as conn:
             for _ in range(3):  # repeated statements: nothing prepared server-side
                 assert conn.scalar(text("SELECT count(*) FROM users")) == 1
             assert conn.scalar(text("SELECT count(*) FROM audit_logs")) == 1
             assert conn.scalar(text("SELECT count(*) FROM intake_batches")) == 1
             assert conn.scalar(text("SELECT count(*) FROM intake_settings")) == 1
+            assert conn.scalar(text("SELECT count(*) FROM mechanism_commands")) == 1
+            assert conn.scalar(text("SELECT count(*) FROM mechanism_station_states")) == 1
         for forbidden in ("UPDATE audit_logs SET action = 'x'", "DELETE FROM audit_logs",
                           "SELECT * FROM alembic_version", "CREATE TABLE app_ddl (id int)"):
             with app_engine.connect() as conn, pytest.raises(ProgrammingError):

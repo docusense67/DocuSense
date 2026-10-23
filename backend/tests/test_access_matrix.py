@@ -32,6 +32,11 @@ STATION = {
     "POST /api/station/applicant-jobs/claim",
     "GET /api/station/applicant-jobs/{submission_id}/pages/{number}",
     "POST /api/station/applicant-jobs/{submission_id}/complete",
+    # cloud motor control: the Pi's relay polls its own commands (docs/cloud-motor-control.md)
+    "GET /api/station/mechanism/commands",
+    "POST /api/station/mechanism/commands/{command_id}/result",
+    "POST /api/station/mechanism/state",
+    "POST /api/station/mechanism/frame",
 }
 
 # Called by the scheduler (Vercel Cron) with `Authorization: Bearer <ADGVS_CRON_SECRET>`, never

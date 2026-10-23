@@ -161,3 +161,20 @@ class IntakeReviewAction(StrEnum):
     ACCEPT = "accept"
     REJECT = "reject"
     REQUEST_RESUBMISSION = "request_resubmission"
+
+
+# ---- camera station mechanism, cloud relay (docs/cloud-motor-control.md) -------------------
+
+class MechanismAction(StrEnum):
+    """A command the station relay forwards to the Pi's loopback bridge (its action name)."""
+
+    SCAN = "scan"  # feed one sheet; the backend decides VALID / INVALID, never the station
+    STOP = "stop"
+    ACKNOWLEDGE = "acknowledge"  # operator says the paper path is clear
+    CONNECT = "connect"
+    DISCONNECT = "disconnect"
+    UP = "up"  # sorting servo to an angle (tray setup)
+    TEST_MOTOR = "test-motor"
+    TEST_SERVO1 = "test-servo1"
+    TEST_SERVO2 = "test-servo2"
+    TEST_SERVO3 = "test-servo3"

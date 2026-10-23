@@ -1,0 +1,33 @@
+# ADGVS camera mechanism for the cloud setup (docs/cloud-motor-control.md): systemd USER unit.
+# Runs deploy/station/run-cloud-mechanism.sh: the loopback GPIO bridge plus the outbound relay
+# to the Render API. Same user and GPIO access as adgvs-local.service (install-autostart.py);
+# the two conflict (one owner of the GPIO pins and port 8765).
+#
+# Install (as the desktop user, repository at ~/adgvs-src):
+#   cp ~/adgvs-src/deploy/station/adgvs-cloud-mechanism.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user disable --now adgvs-local.service     # if it was installed
+#   systemctl --user enable --now adgvs-cloud-mechanism.service
+#   journalctl --user -u adgvs-cloud-mechanism -f
+#
+# Settings: ~/adgvs-src/deploy/station/cloud.env (chmod 600): ADGVS_SERVER, ADGVS_STATION_KEY,
+# ADGVS_MECHANISM_REMOTE=1 to allow remote movement (without it: state + stop/disconnect only).
+
+[Unit]
+Description=ADGVS camera mechanism bridge + cloud relay
+Conflicts=adgvs-local.service
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+WorkingDirectory=%h/adgvs-src
+ExecStart=/bin/bash %h/adgvs-src/deploy/station/run-cloud-mechanism.sh
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+KillMode=control-group
+UMask=0077
+
+[Install]
+WantedBy=default.target

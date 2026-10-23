@@ -51,9 +51,9 @@ AREAS: dict[str, tuple[str, tuple[str, ...]]] = {
         "section_advisers", "subjects", "terms")),
     "documents": ("Requests, generated documents and templates", (
         "document_requests", "document_templates", "generated_documents")),
-    "validation": ("Validation of printed documents and scan stations", (
-        "scan_sessions", "scan_stations", "scanned_documents", "station_event_receipts",
-        "validation_records")),
+    "validation": ("Validation of printed documents, scan stations and the camera mechanism", (
+        "mechanism_commands", "mechanism_station_states", "scan_sessions", "scan_stations",
+        "scanned_documents", "station_event_receipts", "validation_records")),
     "intake": ("Incoming-document screening and applicant uploads", (
         "applicant_pages", "applicant_submissions", "intake_batches", "intake_documents",
         "intake_settings")),
@@ -77,6 +77,8 @@ KEY_FIELDS: dict[str, tuple[str, ...]] = {
                          "routed_tray", "screening_result", "sequence"),
     "intake_settings": ("max_indicator_severity", "min_doc_type_confidence", "min_layout_score",
                         "min_similarity_score"),
+    "mechanism_commands": ("completed_at", "delivered_at", "expires_at", "params", "result"),
+    "mechanism_station_states": ("heartbeat_at", "state", "updated_at", "viewer_seen_at"),
     "programs": ("name",),
     "scan_sessions": ("ended_at", "started_at", "total_docs"),
     "scan_stations": ("last_seen_at", "last_status"),

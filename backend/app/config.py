@@ -30,7 +30,10 @@ class Settings(BaseSettings):
     # Bearer secret for GET /api/internal/cron/daily (Vercel Cron). Unset = route is off (404).
     cron_secret: SecretStr = SecretStr("")
 
-    # Local Pi camera mechanism; disabled for cloud/SANE deployments.
+    # Pi camera mechanism. `loopback` (default): the API runs on the Pi and calls the bridge at
+    # mechanism_url. `relay` (cloud): the API never connects to the Pi; the station's relay
+    # process long-polls commands and reports state (docs/cloud-motor-control.md).
+    mechanism_mode: Literal["loopback", "relay"] = "loopback"
     mechanism_url: str = ""
     mechanism_key: SecretStr = SecretStr("")
     mechanism_station_id: int | None = Field(None, ge=1)
@@ -102,6 +105,8 @@ class Settings(BaseSettings):
             if len(self.mechanism_key.get_secret_value()) < 32 or self.mechanism_station_id is None:
                 raise ValueError("Set a random ADGVS_MECHANISM_KEY (32+ chars) and "
                                  "ADGVS_MECHANISM_STATION_ID")
+        if self.mechanism_mode == "relay" and self.mechanism_station_id is None:
+            raise ValueError("ADGVS_MECHANISM_MODE=relay needs ADGVS_MECHANISM_STATION_ID")
         if self.storage_backend == "supabase":
             if not self.supabase_url.startswith("https://"):
                 raise ValueError("ADGVS_SUPABASE_URL must be the https:// project URL")

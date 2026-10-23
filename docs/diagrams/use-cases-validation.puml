@@ -46,8 +46,10 @@ rectangle "DocuSense" {
     usecase "Compare with official records\n(VALID / INVALID / NEEDS REVIEW)" as V_DECIDE
     usecase "Report station status\n(ready, jam, offline)" as V_STATUS
     ' @routes V_STATUS: POST /api/station/status
-    usecase "Control the camera station\n(feed, motor, trays, preview;\nlocal Pi app only)" as V_MECH
+    usecase "Control the camera station\n(feed, motor, trays, preview;\non the Pi or through the cloud relay)" as V_MECH
     ' @routes V_MECH: GET /api/mechanism/status | GET /api/mechanism/camera/frame | POST /api/mechanism/command
+    usecase "Relay camera station commands\n(poll own commands, report results,\nstate and preview; no student data)" as V_RELAY
+    ' @routes V_RELAY: GET /api/station/mechanism/commands | POST /api/station/mechanism/commands/{command_id}/result | POST /api/station/mechanism/state | POST /api/station/mechanism/frame
   }
 }
 
@@ -59,10 +61,12 @@ Operator -- V_MECH
 V_LOOKUP -- ScanStation
 V_UPLOAD -- ScanStation
 V_STATUS -- ScanStation
+V_RELAY -- ScanStation
 
 V_UPLOAD ..> V_LOOKUP : <<include>>
 V_UPLOAD ..> V_DECIDE : <<include>>
 V_RESULTS <.. V_CONFIRM : <<extend>>
+V_MECH ..> V_RELAY : <<include>>
 
 note "The station only extracts fields;\nthe backend decides the result.\nVALID means the document matches\nofficial records." as N1
 @enduml

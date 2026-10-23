@@ -21,7 +21,9 @@ classDiagram
     class DocumentRequest["DocumentRequest (document_requests)"]
     class DocumentTemplate["DocumentTemplate (document_templates)"]
     class GeneratedDocument["GeneratedDocument (generated_documents)"]
-    %% validation: Validation of printed documents and scan stations
+    %% validation: Validation of printed documents, scan stations and the camera mechanism
+    class MechanismCommand["MechanismCommand (mechanism_commands)"]
+    class MechanismStationState["MechanismStationState (mechanism_station_states)"]
     class ScanSession["ScanSession (scan_sessions)"]
     class ScanStation["ScanStation (scan_stations)"]
     class ScannedDocument["ScannedDocument (scanned_documents)"]
@@ -55,6 +57,8 @@ classDiagram
     IntakeDocument "*" --> "1" ScanStation : station_id
     IntakeDocument "*" --> "0..1" Student : student_id
     IntakeDocument "*" --> "0..1" ApplicantSubmission : submission_id
+    MechanismCommand "*" --> "1" ScanStation : station_id
+    MechanismStationState "*" --> "1" ScanStation : station_id
     NotificationRead "*" --> "1" AuditLog : event_id
     NotificationRead "*" --> "1" User : user_id
     ScanSession "*" --> "0..1" ScanStation : station_id
@@ -69,4 +73,4 @@ classDiagram
     Teacher "0..1" --> "0..1" User : user_id
     UserSession "*" --> "1" User : user_id
     ValidationRecord "0..1" --> "1" ScannedDocument : scanned_document_id
-    note for User "Also referenced by 16 staff columns (created_by, reviewed_by, ...),<br>shown in the area diagrams"
+    note for User "Also referenced by 18 staff columns (created_by, reviewed_by, ...),<br>shown in the area diagrams"

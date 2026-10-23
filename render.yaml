@@ -56,3 +56,7 @@ services:
       # the CSRF check's Origin fallback (browsers without Sec-Fetch-Site) compares against it.
       - key: ADGVS_CORS_ORIGINS
         sync: false
+      # Pi camera station motors (docs/cloud-motor-control.md): not set here, so the default
+      # (loopback, i.e. off on Render) applies. To let cloud operators drive the Pi, set in the
+      # Dashboard ADGVS_MECHANISM_MODE=relay and ADGVS_MECHANISM_STATION_ID=<camera station id>,
+      # and run deploy/station/run-cloud-mechanism.sh on the Pi.

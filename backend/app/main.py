@@ -18,6 +18,7 @@ from app.api import (
     intake_profiles,
     internal,
     mechanism,
+    mechanism_relay,
     notifications,
     requests,
     scanning,
@@ -91,7 +92,7 @@ async def security_headers(request: Request, call_next):
 app.include_router(auth.router, prefix="/api")
 for module in (users, students, catalog, grades, templates, requests, documents, stations,
                scanning, intake, intake_profiles, intake_operator, dashboard, audit,
-               internal, mechanism, notifications, applicant_intake):
+               internal, mechanism, mechanism_relay, notifications, applicant_intake):
     app.include_router(module.router, prefix="/api")
 
 

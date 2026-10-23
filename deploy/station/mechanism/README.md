@@ -134,3 +134,24 @@ systemctl --user restart adgvs-local.service
 
 These controls do not restore the removed GPIO status checks or hardware alert bell.
 Command failures appear inline. A successful command is not proof of physical movement.
+
+## Cloud operators (relay)
+
+When the web app runs in the cloud (Vercel + Render), the API cannot reach this bridge.
+`relay.py` connects out to the Render API with the station key, long-polls operator commands,
+runs them through the bridge's keyed integration endpoints and reports results, state and
+(only while someone watches) preview frames. The bridge itself is unchanged and still listens
+on loopback only.
+
+```bash
+bash /home/adgvs/adgvs-src/deploy/station/run-cloud-mechanism.sh   # bridge + relay
+```
+
+Settings go in `deploy/station/cloud.env`; the user unit is
+`deploy/station/adgvs-cloud-mechanism.service`. The relay moves nothing unless remote control
+is enabled on this Pi (`ADGVS_MECHANISM_REMOTE=1` / `--allow-remote`), never runs an expired
+command, runs stop first, and forwards heartbeats only while the operator's own heartbeat is
+fresh, so the four-second dead-man still stops the outputs if the operator or the network goes
+away. Design, safety rules, Render settings and remaining risks:
+[docs/cloud-motor-control.md](../../../docs/cloud-motor-control.md). `tests/test_relay.py`
+checks the relay with a fake bridge and API.
