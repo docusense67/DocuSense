@@ -136,6 +136,16 @@ Access is enforced on the server on every route (`backend/app/api/deps.py`: `req
 | `operator_id`, `station_id`, times | `scan_sessions` | Operator | Accountability | Operator. The registrar dashboard shows counts only. | — | Set by the school; manual deletion in MVP |
 | Scan count per document | computed from `scanned_documents` | Students | Notice repeated use of copies | Operator | — | — |
 
+### 4.4.1 Applicant intake (online uploads, [applicant-intake.md](applicant-intake.md))
+
+| Field | Table | Whose data | Purpose | Who can see it | Printed on | Retention |
+| --- | --- | --- | --- | --- | --- | --- |
+| Uploaded page images | storage `applicant/`, rows in `applicant_pages` | Applicants (everything on their previous school's TOR/COE) | Reading and staff review | The applicant (own, while a draft or until read). Registrar, Admin. | — | Withdrawn drafts: deleted at once. Otherwise set by the school; manual deletion in MVP. |
+| First reading (OCR text, fields, layout), assessment | `intake_documents.screening_result` | Applicants | Input to the decision | Registrar, Admin | — | As the intake document |
+| Second reading (OCR text, fields), disagreeing field names | `applicant_second_passes` | Applicants | Check the first reading | Registrar, Admin | — | As the intake document |
+| Reference sample pages and their reading | storage `applicant-references/`, `applicant_references` | The people named on the samples (other schools' documents) | Compare uploads with the school's layout; train and evaluate the models | Registrar, Admin | — | Retired versions kept for the audit trail; **the DPO should set a period**, and samples need the issuing school's permission. |
+| Per-student adviser | `student_advisers` | Students, teachers | Advising | The student (own adviser's name). The teacher (own advisees). Registrar, Admin. | — | Set by the school; manual deletion in MVP |
+
 ### 4.5 Audit trail
 
 | Field | Table | Whose data | Purpose | Who can see it | Printed on | Retention |

@@ -37,6 +37,10 @@ The database has no CHECK constraint on these columns. The application is the on
 | ScanMode | `scan_sessions.mode` | `SINGLE` → single, `BULK` → bulk |
 | ValidationResult | `validation_records.result`, `validation_records.final_result` | `VALID`, `INVALID`, `NEEDS_REVIEW` (same in the API) |
 | IntakeStatus | `intake_documents.status` | `SCREENED` → screened, `ACCEPTED` → accepted, `REJECTED` → rejected, `RESUBMISSION_REQUESTED` → resubmission_requested, `DATA_REVIEWED` → data_reviewed, `LINKED` → linked (the last two from migration `d5a8c3e1f2b7`, S-06/S-07) |
+| ReferenceLabel | `applicant_references.label` | `GENUINE_SAMPLE` → genuine_sample, `ALTERED_SAMPLE` → altered_sample, `OTHER` → other (dataset labels of reference samples, [applicant-intake.md](applicant-intake.md); a match is not proof of authenticity) |
+| ReferenceUse | `applicant_references.use` | `TRAINING` → training, `HELD_OUT` → held_out |
+| ReferenceStatus | `applicant_references.status` | `QUEUED`, `PROCESSING`, `PENDING`, `APPROVED`, `RETIRED`, `FAILED` (lower case in the API) |
+| SecondPassStatus | `applicant_second_passes.status` | `QUEUED`, `PROCESSING`, `DONE`, `FAILED` (lower case in the API) |
 
 ### Migrations
 
@@ -49,6 +53,7 @@ The database has no CHECK constraint on these columns. The application is the on
 | `b3f1c9a2d7e4` | 2026-10-05 | `users.locked_at` (lockouts end after 15 minutes). Accounts already locked when it runs start their 15 minutes then. |
 | `d5a8c3e1f2b7` | 2026-10-12 | S-06/S-07: `students.lrn` (unique), `birth_place`, `mother_name`, `father_name`; `intake_documents.reviewed_fields`, `fields_reviewed_by`, `fields_reviewed_at`, `student_id`, `linked_by`, `linked_at`. Revises the merge head `fb5d28bdec60`. |
 | `e7b2c4d9a1f3` | 2026-10-12 | S-11 approve-first request states (in-flight requests: `APPROVED` → `VERIFIED`, `FOR_APPROVAL` → `FOR_VERIFICATION`, `PROCESSING` → `REQUESTED`, each audited as `request_status_migrated`) and the S-08 `section_advisers` table |
+| `d3f8a6c2e9b4` | 2026-10-23 | Applicant intake phase 2 ([applicant-intake.md](applicant-intake.md)): `applicant_references` (reference samples, lease columns for the OCR worker), `applicant_second_passes` (second OCR pass, stored apart from the first), `student_advisers` (one teacher-adviser per student and term, unique on student and term; distinct from `section_advisers`), `applicant_submissions.uploaded_by`. New tables locked down (RLS, Data API roles revoked). Revises `b6f2d8e4c1a7`. |
 
 In the production stack (`docker-compose.yml`), the one-shot `migrate` service runs `alembic upgrade head` and then `python -m app.manage setup-db-roles` as the database owner before the API starts.
 
