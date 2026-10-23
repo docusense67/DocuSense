@@ -5,7 +5,8 @@
 #   sudo systemctl enable --now adgvs-applicant-worker
 #   sudo systemctl status adgvs-applicant-worker      journalctl -u adgvs-applicant-worker -f
 #
-# Claims online TOR/COE submissions from the API with the station key, reads them with
+# Claims jobs from the API with the station key (first readings of online TOR/COE uploads,
+# second OCR passes, reference samples; ADGVS_APPLICANT_JOB_KINDS limits them), reads them with
 # Tesseract and sends the reading back (scan_agent/applicant_worker.py). It needs no scanner,
 # camera or GPIO, only the network. Same settings file as the station: /etc/adgvs/station.env
 # (ADGVS_SERVER, ADGVS_STATION_KEY, ADGVS_CA_CERT, TESSERACT_CMD). In the cloud setup
