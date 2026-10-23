@@ -93,7 +93,8 @@ class Settings(BaseSettings):
                     or url.query or url.fragment):
                 raise ValueError("ADGVS_MECHANISM_URL must be a loopback HTTP origin")
             if len(self.mechanism_key.get_secret_value()) < 32 or self.mechanism_station_id is None:
-                raise ValueError("Set a random ADGVS_MECHANISM_KEY (32+ chars) and MECHANISM_STATION_ID")
+                raise ValueError("Set a random ADGVS_MECHANISM_KEY (32+ chars) and "
+                                 "ADGVS_MECHANISM_STATION_ID")
         if self.storage_backend == "supabase":
             if not self.supabase_url.startswith("https://"):
                 raise ValueError("ADGVS_SUPABASE_URL must be the https:// project URL")

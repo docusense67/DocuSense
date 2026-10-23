@@ -115,7 +115,9 @@ def test_station_lookup_returns_zones_but_no_student_data(env):
 
 def test_station_finds_its_open_session(env):
     res = env["client"].get("/api/station/session", headers={"X-Station-Key": env["key"]})
-    assert res.json() == {"session_id": env["session"]["session_id"], "mode": "single"}
+    # next_position: the position the camera station numbers its next sheet with.
+    assert res.json() == {"session_id": env["session"]["session_id"], "mode": "single",
+                          "next_position": 1}
     assert env["session"]["output_tray"] == "Single"
 
 

@@ -23,10 +23,12 @@ from app.timeutil import as_utc
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
+# Approve-first order (S-11): approve the request, generate, verify, release.
 MESSAGES = {
     "request_submitted": "Request filed",
-    "document_generated": "Request waiting for approval",
-    "document_approved": "Request approved",
+    "request_approved": "Request approved",
+    "document_generated": "Document waiting for verification",
+    "document_verified": "Document verified",
     "document_released": "Document ready to download",
     "request_rejected": "Request rejected",
     "request_cancelled": "Request cancelled",

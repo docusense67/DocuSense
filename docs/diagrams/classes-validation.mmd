@@ -28,6 +28,10 @@ classDiagram
         float ocr_confidence
         int position_in_stack
     }
+    class StationEventReceipt["StationEventReceipt (station_event_receipts)"] {
+        str event_id PK
+        int station_id PK,FK
+    }
     class ValidationRecord["ValidationRecord (validation_records)"] {
         int id PK
         int reviewed_by FK
@@ -54,6 +58,7 @@ classDiagram
     ScanStation "*" --> "0..1" User : registered_by
     ScannedDocument "*" --> "0..1" GeneratedDocument : matched_document_id
     ScannedDocument "*" --> "1" ScanSession : session_id
+    StationEventReceipt "*" --> "1" ScanStation : station_id
     ValidationRecord "*" --> "0..1" User : reviewed_by
     ValidationRecord "0..1" --> "1" ScannedDocument : scanned_document_id
     ScanSession ..> ScanMode

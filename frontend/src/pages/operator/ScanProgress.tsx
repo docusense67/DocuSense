@@ -1,5 +1,5 @@
 import type { MechanismStatus } from '../../api'
-import { scanProgress } from './scanProgress'
+import { scanProgress } from './scanProgressSteps'
 
 const steps = ['Paper feeding', 'Scanning', 'Checking', 'Result']
 const colors = {

@@ -46,12 +46,15 @@ rectangle "DocuSense" {
     usecase "Compare with official records\n(VALID / INVALID / NEEDS REVIEW)" as V_DECIDE
     usecase "Report station status\n(ready, jam, offline)" as V_STATUS
     ' @routes V_STATUS: POST /api/station/status
+    usecase "Control the camera station\n(feed, motor, trays, preview;\nlocal Pi app only)" as V_MECH
+    ' @routes V_MECH: GET /api/mechanism/status | GET /api/mechanism/camera/frame | POST /api/mechanism/command
   }
 }
 
 Operator -- V_SESSION
 Operator -- V_RESULTS
 Operator -- V_REPORT
+Operator -- V_MECH
 
 V_LOOKUP -- ScanStation
 V_UPLOAD -- ScanStation

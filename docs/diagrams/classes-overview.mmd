@@ -25,13 +25,15 @@ classDiagram
     class ScanSession["ScanSession (scan_sessions)"]
     class ScanStation["ScanStation (scan_stations)"]
     class ScannedDocument["ScannedDocument (scanned_documents)"]
+    class StationEventReceipt["StationEventReceipt (station_event_receipts)"]
     class ValidationRecord["ValidationRecord (validation_records)"]
     %% intake: Incoming-document screening
     class IntakeBatch["IntakeBatch (intake_batches)"]
     class IntakeDocument["IntakeDocument (intake_documents)"]
     class IntakeSettings["IntakeSettings (intake_settings)"]
-    %% audit: Audit trail
+    %% audit: Audit trail and notifications
     class AuditLog["AuditLog (audit_logs)"]
+    class NotificationRead["NotificationRead (notification_reads)"]
     AuditLog "*" --> "0..1" User : user_id
     ClassSection "*" --> "1" Subject : subject_id
     ClassSection "*" --> "0..1" Teacher : teacher_id
@@ -47,11 +49,14 @@ classDiagram
     IntakeDocument "*" --> "0..1" IntakeBatch : batch_id
     IntakeDocument "*" --> "1" ScanStation : station_id
     IntakeDocument "*" --> "0..1" Student : student_id
+    NotificationRead "*" --> "1" AuditLog : event_id
+    NotificationRead "*" --> "1" User : user_id
     ScanSession "*" --> "0..1" ScanStation : station_id
     ScannedDocument "*" --> "0..1" GeneratedDocument : matched_document_id
     ScannedDocument "*" --> "1" ScanSession : session_id
     SectionAdviser "*" --> "1" Teacher : teacher_id
     SectionAdviser "*" --> "1" Term : term_id
+    StationEventReceipt "*" --> "1" ScanStation : station_id
     Student "*" --> "0..1" Program : program_id
     Student "0..1" --> "0..1" User : user_id
     Subject "*" --> "0..1" Program : program_id

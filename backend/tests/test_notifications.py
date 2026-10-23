@@ -6,22 +6,29 @@ from tests.test_requests import as_user, isolated, request_doc, seeded  # noqa: 
 def test_request_and_approval_notifications(as_user):
     client = as_user("maria.santos")
     request = request_doc(client).json()
-    assert request["status"] == "for_approval"
+    assert request["status"] == "requested"
     client = as_user("registrar")
     response = client.get("/api/notifications")
     assert response.status_code == 200
     notifications = response.json()
+    assert {n["title"] for n in notifications} == {"Request filed"}
+    # Approve-first (S-11): approving the request generates the document for verification.
+    assert client.post(f"/api/requests/{request['id']}/approve").json()["status"] == (
+        "for_verification")
+    notifications = client.get("/api/notifications").json()
     assert {n["title"] for n in notifications} >= {
-        "Request filed", "Request waiting for approval",
+        "Request filed", "Request approved", "Document waiting for verification",
     }
     assert all(n["href"] == f"/requests/{request['id']}" for n in notifications)
     assert all(request["reference_no"] in n["message"] for n in notifications)
     assert [n["id"] for n in notifications] == sorted(
         [n["id"] for n in notifications], reverse=True,
     )
-    assert client.post(f"/api/requests/{request['id']}/approve").status_code == 200
+    assert client.post(f"/api/requests/{request['id']}/verify").status_code == 200
     own = as_user("maria.santos").get("/api/notifications").json()
-    assert {n["title"] for n in own} >= {"Request approved", "Document ready to download"}
+    assert {n["title"] for n in own} >= {
+        "Request approved", "Document verified", "Document ready to download",
+    }
     assert all(n["href"] == "/" for n in own)
     assert as_user("juan.delacruz").get("/api/notifications").json() == []
     assert as_user("teacher").get("/api/notifications").json() == []

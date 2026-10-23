@@ -41,6 +41,8 @@ rectangle "DocuSense" {
     ' @routes A_PASSWORD: POST /api/auth/change-password
     usecase "Log out" as A_LOGOUT
     ' @routes A_LOGOUT: POST /api/auth/logout
+    usecase "See request notifications\n(mark as read)" as A_NOTIFY
+    ' @routes A_NOTIFY: GET /api/notifications | POST /api/notifications/read
     usecase "Manage user accounts\n(list, reset password, deactivate)" as A_MANAGE
     ' @routes A_MANAGE: GET /api/users | POST /api/users/{user_id}/reset-password | POST /api/users/{user_id}/deactivate
     usecase "Create a student's login\nfrom the student record" as A_STUDENT_LOGIN
@@ -51,6 +53,7 @@ rectangle "DocuSense" {
 AnyUser -- A_LOGIN
 AnyUser -- A_PASSWORD
 AnyUser -- A_LOGOUT
+AnyUser -- A_NOTIFY
 Registrar -- A_MANAGE
 Registrar -- A_STUDENT_LOGIN
 Admin -- A_MANAGE

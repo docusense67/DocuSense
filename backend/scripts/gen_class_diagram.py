@@ -52,10 +52,11 @@ AREAS: dict[str, tuple[str, tuple[str, ...]]] = {
     "documents": ("Requests, generated documents and templates", (
         "document_requests", "document_templates", "generated_documents")),
     "validation": ("Validation of printed documents and scan stations", (
-        "scan_sessions", "scan_stations", "scanned_documents", "validation_records")),
+        "scan_sessions", "scan_stations", "scanned_documents", "station_event_receipts",
+        "validation_records")),
     "intake": ("Incoming-document screening", (
         "intake_batches", "intake_documents", "intake_settings")),
-    "audit": ("Audit trail", ("audit_logs",)),
+    "audit": ("Audit trail and notifications", ("audit_logs", "notification_reads")),
 }
 
 # Attributes shown besides the automatic ones (primary key, foreign keys, unique columns, enums,

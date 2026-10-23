@@ -26,6 +26,16 @@ from app.timeutil import utcnow
 from tests.station_test_base import inline_thread
 
 
+def weasyprint_available() -> bool:
+    try:
+        import weasyprint  # noqa: F401
+    except OSError:
+        return False
+    return True
+
+
+# Real PDFs: skipped on the Windows dev machine (no GTK), always rendered in CI.
+@unittest.skipUnless(weasyprint_available(), 'WeasyPrint system libraries missing')
 class CoreLocalWorkflowTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         if os.getenv('ADGVS_INLINE_TEST_THREADS'):
@@ -70,13 +80,19 @@ class CoreLocalWorkflowTests(unittest.IsolatedAsyncioTestCase):
             'document_type': document_type, 'purpose': 'Core workflow validation'})
         self.assertEqual(response.status_code, 201, response.text)
         row = response.json()
-        self.assertEqual(row['status'], 'for_approval', row)
-        document = self.db.get(GeneratedDocument, row['document']['id'])
+        self.assertEqual(row['status'], 'requested', row)
+        # Approve-first (S-11): approval generates the document; verification releases it.
+        self.login('registrar')
+        approved = await self.client.post(f"/api/requests/{row['id']}/approve")
+        self.assertEqual(approved.status_code, 200, approved.text)
+        self.assertEqual(approved.json()['status'], 'for_verification', approved.text)
+        document = self.db.get(GeneratedDocument, approved.json()['document']['id'])
+        self.login(handle)
         denied = await self.client.post(f'/api/documents/{document.id}/download-link')
         self.assertEqual(denied.status_code, 404)
         self.login('registrar')
-        approved = await self.client.post(f"/api/requests/{row['id']}/approve")
-        self.assertEqual(approved.status_code, 200)
+        verified = await self.client.post(f"/api/requests/{row['id']}/verify")
+        self.assertEqual(verified.status_code, 200, verified.text)
         self.login(handle)
         link = await self.client.post(f'/api/documents/{document.id}/download-link')
         self.assertEqual(link.status_code, 200, link.text)
@@ -159,8 +175,9 @@ class CoreLocalWorkflowTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(report.content.startswith(b'%PDF-') if format == 'pdf'
                             else b'field_discrepancies' in report.content)
         actions = set(self.db.scalars(select(AuditLog.action)))
-        self.assertTrue({'request_submitted', 'document_generated', 'document_approved',
-                         'document_released', 'document_downloaded'}.issubset(actions), actions)
+        self.assertTrue({'request_submitted', 'request_approved', 'document_generated',
+                         'document_verified', 'document_released',
+                         'document_downloaded'}.issubset(actions), actions)
         self.login('teacher')
         self.assertEqual((await self.client.get('/api/validations')).status_code, 403)
         self.assertEqual((await self.client.get('/api/students')).status_code, 403)
