@@ -5,6 +5,7 @@ import { Notifications } from './Notifications'
 
 const ROLE_LABEL: Record<User['role'], string> = {
   student: 'Student', teacher: 'Teacher', registrar: 'Registrar', admin: 'System Admin',
+  applicant: 'Applicant',
 }
 
 function navFor(user: User): { to: string; label: string }[] {
@@ -13,6 +14,8 @@ function navFor(user: User): { to: string; label: string }[] {
       return [{ to: '/', label: 'My documents' }]
     case 'teacher':
       return [{ to: '/', label: 'My classes' }]
+    case 'applicant':
+      return [{ to: '/', label: 'My documents' }]
     case 'admin':
       return [{ to: '/', label: 'Accounts & stations' }, { to: '/overview', label: 'Overview' },
         { to: '/intake-settings', label: 'Screening thresholds' }, { to: '/audit', label: 'Audit trail' }]
@@ -21,6 +24,7 @@ function navFor(user: User): { to: string; label: string }[] {
         { to: '/', label: 'Dashboard' },
         { to: '/requests', label: 'Requests' },
         { to: '/intake', label: 'Incoming documents' },
+        { to: '/applicants', label: 'Applicants' },
         { to: '/records', label: 'Records' },
         { to: '/setup', label: 'Academic setup' },
         { to: '/templates', label: 'Templates' },

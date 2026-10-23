@@ -22,7 +22,9 @@ export function IntakeStatusBadge({ status }: { status: IntakeStatus }) {
 }
 
 /** Assigned tray, and what the gate reported when it differs or jammed. */
-export function TrayCell({ row }: { row: Pick<IntakeRow, 'assigned_tray' | 'routed_tray' | 'routing_jam'> }) {
+export function TrayCell({ row }: { row: Pick<IntakeRow, 'assigned_tray' | 'routed_tray' | 'routing_jam'> & Partial<Pick<IntakeRow, 'source'>> }) {
+  // Uploaded online (docs/applicant-intake.md): never went through a tray.
+  if (row.source === 'online') return <span data-testid="intake-online">Online upload</span>
   const issue = row.routing_jam ? 'jammed' : row.routed_tray !== null && row.routed_tray !== row.assigned_tray
     ? `went to Tray ${row.routed_tray}` : null
   return (

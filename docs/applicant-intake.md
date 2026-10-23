@@ -21,7 +21,7 @@ means a document is authentic; staff make the decision.
 |---|---|
 | Backend: API, rules, migration `a9d4e2c7b1f5`, tests (`tests/test_applicant_intake.py`) | done |
 | OCR worker on the station (`scan_agent/applicant_worker.py`, `adgvs-applicant-worker.service`, tests `scan-agent/tests/test_applicant_worker.py`) | done |
-| Web app: applicant upload page, multi-page view for staff, applicant logins | to do |
+| Web app: applicant "My documents" page; staff "Applicants" page (logins, uploads, queue again); online filter and all pages in Incoming documents | done (no Playwright test yet) |
 
 **Phase 2** is a separate decision. It covers reference layouts for each school (which would
 let an upload pass screening), a second OCR pass and per-submission exports.

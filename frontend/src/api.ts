@@ -26,7 +26,8 @@ export interface MechanismCommand {
   angle?: number
 }
 
-export type Role = 'student' | 'teacher' | 'registrar' | 'admin'
+/** applicant: not yet a student, sends documents from another school (docs/applicant-intake.md). */
+export type Role = 'student' | 'teacher' | 'registrar' | 'admin' | 'applicant'
 export type DocType = 'TOR' | 'COE'
 export type Result = 'VALID' | 'INVALID' | 'NEEDS_REVIEW'
 /** Registrar sub-steps, approve-first order (S-11): approve the request, then generate, verify, release. */
@@ -320,7 +321,9 @@ export interface RegistrarDashboard {
 // ---- incoming-document screening (Part I, docs/intake/screening-contract.md) ----
 export type IntakeDocType =
   | 'psa_birth_certificate' | 'jhs_report_card' | 'good_moral_certificate'
-  | 'jhs_completion_certificate' | 'unknown'
+  | 'jhs_completion_certificate' | 'transcript_of_records' | 'certificate_of_enrollment' | 'unknown'
+/** station: paper through the intake station; online: uploaded by an applicant. */
+export type IntakeSource = 'station' | 'online'
 export type IntakeDecision = 'passed_screening' | 'manual_review'
 /** screened -> accepted -> data_reviewed -> linked (S-06/S-07); rejected / resubmission end it. */
 export type IntakeStatus = 'screened' | 'accepted' | 'rejected' | 'resubmission_requested' | 'data_reviewed' | 'linked'
@@ -328,6 +331,8 @@ export type IntakeAction = 'accept' | 'reject' | 'request_resubmission'
 
 export interface IntakeRow {
   id: number
+  source: IntakeSource
+  submission_id: number | null
   batch_id: number | null
   sequence: number | null
   doc_type: IntakeDocType
@@ -349,6 +354,11 @@ export interface IntakeIndicator { code?: string; severity?: number; detail?: st
 
 export interface IntakeDetail extends IntakeRow {
   station: string | null
+  /** Online uploads: every page is served by api.applicantPageUrl. */
+  submission: {
+    id: number; pages: number; declared_type: IntakeDocType; issuing_school: string
+    applicant_email: string | null; submitted_at: string | null
+  } | null
   predicted_doc_type: string | null
   reasons_explained: { code: string; text: string }[]
   indicators: IntakeIndicator[]
@@ -404,7 +414,29 @@ export interface IntakeCandidate {
   conflicts: ('lrn_differs' | 'name_differs' | 'birthdate_differs')[]
 }
 
-export interface IntakeFilters { status?: IntakeStatus | ''; doc_type?: IntakeDocType | ''; decision?: IntakeDecision | ''; batch_id?: string; student_id?: number }
+export interface IntakeFilters { status?: IntakeStatus | ''; doc_type?: IntakeDocType | ''; decision?: IntakeDecision | ''; batch_id?: string; student_id?: number; source?: IntakeSource | '' }
+
+// ---- applicant intake (docs/applicant-intake.md) ----
+export type ApplicantDocType = 'transcript_of_records' | 'certificate_of_enrollment'
+export type ApplicantSubmissionStatus = 'draft' | 'queued' | 'processing' | 'screened' | 'failed' | 'withdrawn'
+/** The applicant's own view: plain status text, no staff notes. */
+export interface ApplicantSubmission {
+  id: number
+  declared_type: ApplicantDocType
+  issuing_school: string
+  status: ApplicantSubmissionStatus
+  status_text: string
+  pages: number
+  created_at: string
+  submitted_at: string | null
+}
+export interface StaffApplicantSubmission extends ApplicantSubmission {
+  applicant_email: string | null
+  attempts: number
+  error: string | null
+  intake_document_id: number | null
+  lease_expires_at: string | null
+}
 
 export interface IntakeThresholds {
   min_doc_type_confidence: number
@@ -596,6 +628,26 @@ export const api = {
   student: (id: number) => request<StudentRow>(`/students/${id}`),
   intakeSettings: () => request<IntakeSettings>('/intake/settings'),
   saveIntakeSettings: (body: IntakeThresholds & { reason: string }) => put<IntakeSettings>('/intake/settings', body),
+
+  // applicant intake: the applicant's own submissions
+  mySubmissions: () => request<ApplicantSubmission[]>('/applicant/submissions'),
+  startSubmission: (body: { declared_type: ApplicantDocType; issuing_school: string; consent: boolean }) =>
+    post<ApplicantSubmission>('/applicant/submissions', body),
+  uploadSubmissionFile: (id: number, file: File) =>
+    upload<ApplicantSubmission>(`/applicant/submissions/${id}/pages`, file),
+  deleteSubmissionPage: (id: number, page: number) =>
+    request<ApplicantSubmission>(`/applicant/submissions/${id}/pages/${page}`, { method: 'DELETE' }),
+  submitSubmission: (id: number) => post<ApplicantSubmission>(`/applicant/submissions/${id}/submit`),
+  withdrawSubmission: (id: number) => post<ApplicantSubmission>(`/applicant/submissions/${id}/withdraw`),
+  mySubmissionPageUrl: (id: number, page: number) => `/api/applicant/submissions/${id}/pages/${page}`,
+  // applicant intake: staff
+  createApplicant: (email: string, temporary_password: string) =>
+    post<{ id: number; email: string }>('/applicants', { email, temporary_password }),
+  applicantSubmissions: (state?: ApplicantSubmissionStatus | '') =>
+    request<StaffApplicantSubmission[]>(`/applicant-submissions${qs({ state })}`),
+  retrySubmission: (id: number, reason: string) =>
+    post<StaffApplicantSubmission>(`/applicant-submissions/${id}/retry`, { reason }),
+  applicantPageUrl: (id: number, page: number) => `/api/applicant-submissions/${id}/pages/${page}`,
 
   // admin
   users: () => request<User[]>('/users'),

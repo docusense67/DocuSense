@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
-import { api, type IntakeDecision, type IntakeDocType, type IntakeFilters, type IntakeStatus } from '../../api'
+import { api, type IntakeDecision, type IntakeDocType, type IntakeFilters, type IntakeSource, type IntakeStatus } from '../../api'
 import { Card, Empty, ErrorText, Page, Table, Td } from '../../components/ui'
 import { formatDate } from '../../lib/format'
 import { DECISION_LABEL, DOC_TYPE_LABEL, STATUS_LABEL, percent } from '../../lib/intake'
@@ -21,6 +21,7 @@ export function IntakeQueue() {
     doc_type: (params.get('doc_type') ?? '') as IntakeDocType | '',
     decision: (params.get('decision') ?? '') as IntakeDecision | '',
     batch_id: params.get('batch_id') ?? '',
+    source: (params.get('source') ?? '') as IntakeSource | '',
   }
   const queue = useQuery({ queryKey: ['intake', filters], queryFn: () => api.intakeQueue(filters) })
   const setFilter = (key: string, value: string) => {
@@ -49,6 +50,12 @@ export function IntakeQueue() {
             onChange={(e) => setFilter('decision', e.target.value)} className={selectClass}>
             <option value="">All screening results</option>
             {DECISIONS.map((d) => <option key={d} value={d}>{DECISION_LABEL[d]}</option>)}
+          </select>
+          <select aria-label="Filter by source" data-testid="intake-filter-source" value={filters.source}
+            onChange={(e) => setFilter('source', e.target.value)} className={selectClass}>
+            <option value="">Station and online</option>
+            <option value="station">Intake station</option>
+            <option value="online">Online uploads</option>
           </select>
           <select aria-label="Filter by document type" data-testid="intake-filter-doc-type" value={filters.doc_type}
             onChange={(e) => setFilter('doc_type', e.target.value)} className={selectClass}>

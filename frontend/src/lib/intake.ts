@@ -8,6 +8,8 @@ export const DOC_TYPE_LABEL: Record<IntakeDocType, string> = {
   jhs_report_card: 'JHS report card',
   good_moral_certificate: 'Good moral certificate',
   jhs_completion_certificate: 'JHS completion certificate',
+  transcript_of_records: 'Transcript of Records (other school)',
+  certificate_of_enrollment: 'Certificate of Enrollment (other school)',
   unknown: 'Unknown document',
 }
 

@@ -163,8 +163,21 @@ export function IntakeReview() {
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title="Page image">
-          {d.has_image ? (
+        <Card title={d.submission ? `Uploaded pages (${d.submission.pages})` : 'Page image'}>
+          {d.submission ? (
+            <div className="space-y-3" data-testid="intake-online-pages">
+              <p className="text-sm text-ink-2">
+                Uploaded online by {d.submission.applicant_email ?? 'an applicant'} as {DOC_TYPE_LABEL[d.submission.declared_type]}{' '}
+                from {d.submission.issuing_school}.
+              </p>
+              {Array.from({ length: d.submission.pages }, (_, i) => i + 1).map((page) => (
+                <a key={page} href={api.applicantPageUrl(d.submission!.id, page)} target="_blank" rel="noopener">
+                  <img src={api.applicantPageUrl(d.submission!.id, page)} alt={`Uploaded page ${page} of incoming document ${d.id}`}
+                    loading="lazy" className="mb-2 w-full rounded-md border border-line bg-white" />
+                </a>
+              ))}
+            </div>
+          ) : d.has_image ? (
             <a href={api.intakeImageUrl(d.id)} target="_blank" rel="noopener">
               <img src={api.intakeImageUrl(d.id)} alt={`Captured page of incoming document ${d.id}`}
                 data-testid="intake-image" className="w-full rounded-md border border-line bg-white" />

@@ -4,11 +4,13 @@ import { api, ApiError } from './api'
 import { Layout } from './components/Layout'
 import { AdminHome } from './pages/admin/AdminHome'
 import { IntakeSettingsPage } from './pages/admin/IntakeSettings'
+import { ApplicantHome } from './pages/applicant/ApplicantHome'
 import { AuditTrail } from './pages/AuditTrail'
 import { ChangePassword, Login } from './pages/Auth'
 import { IntakeStationPage } from './pages/operator/IntakeStation'
 import { OperatorHome } from './pages/operator/OperatorHome'
 import { ScanDetailPage } from './pages/operator/ScanDetail'
+import { Applicants } from './pages/registrar/Applicants'
 import { IntakeQueue } from './pages/registrar/IntakeQueue'
 import { IntakeReview } from './pages/registrar/IntakeReview'
 import { Records } from './pages/registrar/Records'
@@ -46,6 +48,7 @@ export default function App() {
         <Route element={<Layout user={user} />}>
           {user.role === 'student' && <Route index element={<StudentHome />} />}
           {user.role === 'teacher' && <Route index element={<TeacherHome />} />}
+          {user.role === 'applicant' && <Route index element={<ApplicantHome />} />}
           {user.role === 'admin' && (
             <>
               <Route index element={<AdminHome />} />
@@ -61,6 +64,7 @@ export default function App() {
               <Route path="requests/:id" element={<RequestReview />} />
               <Route path="intake" element={<IntakeQueue />} />
               <Route path="intake/:id" element={<IntakeReview />} />
+              <Route path="applicants" element={<Applicants />} />
               <Route path="records" element={<Records />} />
               <Route path="records/students/:id" element={<StudentRecord />} />
               <Route path="setup" element={<Setup />} />
