@@ -37,7 +37,7 @@ def staff(env, handle="registrar"):
 
 
 def add_reference(client, school=SCHOOL, doc_type="transcript_of_records",
-                  label="genuine_sample", use="training", rules=None, content=JPEG, **extra):
+                  label="known_good_sample", use="training", rules=None, content=JPEG, **extra):
     data = {"issuing_school": school, "doc_type": doc_type, "label": label, "use": use,
             "rules": json.dumps(rules if rules is not None else {}), **extra}
     return client.post("/api/applicant-references", data=data,
@@ -157,7 +157,7 @@ def test_a_reference_that_is_not_approved_yet_can_be_edited(env):
 
 @pytest.mark.parametrize(("body", "code"), [
     ({"label": "other"}, 422),  # "other" samples are of type unknown
-    ({"doc_type": "unknown"}, 422),  # a genuine sample must be a TOR or COE
+    ({"doc_type": "unknown"}, 422),  # a known-good sample must be a TOR or COE
     ({"doc_type": "psa_birth_certificate"}, 422),
     ({"rules": {"colour": "blue"}}, 422),
     ({"school": " "}, 422),
@@ -175,7 +175,7 @@ def test_reference_upload_keeps_pdf_pages_and_the_size_limit(env, monkeypatch):
     client = staff(env)
     res = client.post("/api/applicant-references", data={
         "issuing_school": SCHOOL, "doc_type": "transcript_of_records",
-        "label": "genuine_sample"}, files=[("file", ("a.pdf", pdf(2), "application/pdf")),
+        "label": "known_good_sample"}, files=[("file", ("a.pdf", pdf(2), "application/pdf")),
                                            ("file", ("b.jpg", JPEG, "image/jpeg"))])
     assert res.status_code == 201 and res.json()["pages"] == 3
     monkeypatch.setattr(get_settings(), "applicant_upload_max_bytes", 100_000)
@@ -286,5 +286,5 @@ def test_rows_are_stored_with_enum_names(env):
     row = env["db"].execute(text(
         "SELECT label, use, status, doc_type FROM applicant_references WHERE id = :id"),
         {"id": ref_id}).one()
-    assert tuple(row) == ("GENUINE_SAMPLE", "TRAINING", "QUEUED", "TRANSCRIPT_OF_RECORDS")
+    assert tuple(row) == ("KNOWN_GOOD_SAMPLE", "TRAINING", "QUEUED", "TRANSCRIPT_OF_RECORDS")
     assert env["db"].get(ApplicantReference, ref_id).status == ReferenceStatus.QUEUED

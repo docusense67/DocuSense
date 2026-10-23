@@ -12,7 +12,7 @@ from the intake station. There is no second review system.
 
 Wording is the same as for screening: **passed screening** / **needs manual review**. Neither
 means a document is authentic; staff make the decision. Reference samples carry the dataset
-labels "genuine sample" and "altered sample": **a match with a reference sample is not proof of
+labels "known-good sample" and "altered sample": **a match with a reference sample is not proof of
 authenticity**, only that no automatic check flagged the upload.
 
 ## Status
@@ -56,7 +56,7 @@ authenticity**, only that no automatic check flagged the upload.
    - **Errors:** an error is retried up to 3 times. After that the job is **failed**, and
      staff can queue it again with a reason.
 4. **Decision.** The backend decides with `services/applicant_intake.assess_upload`, a pure,
-   unit-tested function. It compares the upload with the **latest approved genuine-sample
+   unit-tested function. It compares the upload with the **latest approved known-good-sample
    training reference of the same school and type** (`services/applicant_references.assess`;
    school names are matched after normalising case, accents, punctuation, "&", a leading
    "the" and a few abbreviations). Without such a reference the upload needs manual review
@@ -114,7 +114,7 @@ They never see staff notes, the reasons or the reading.
 On **Reference samples** (registrar, administrator) staff upload labelled samples of a
 school's documents. A match with a reference sample is not proof of authenticity.
 
-- **Label:** *genuine sample* (a known-good document of that school), *altered sample* (a
+- **Label:** *known-good sample* (a known-good document of that school), *altered sample* (a
   known-altered one; trains the layout model) or *other* (not a TOR/COE; trains the
   classifier's "unknown" class, type `unknown`).
 - **Use:** *training* (compared with, extends the classifier, trains the layout model) or
@@ -135,7 +135,7 @@ school's documents. A match with a reference sample is not proof of authenticity
   accuracy are stored in each reading.
 - **Layout model:** a nearest-neighbour model over layout features (page count, line count,
   word height and gap, line gap). It is used only when the school has approved *training*
-  samples labelled both genuine sample **and** altered sample for that type. It runs in the
+  samples labelled both known-good sample **and** altered sample for that type. It runs in the
   backend, records its version, training reference ids and held-out evaluation, and its verdict
   is **preliminary**: it can send an upload to manual review, never pass one on its own.
 

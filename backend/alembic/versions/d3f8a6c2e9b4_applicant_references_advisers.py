@@ -78,7 +78,7 @@ def upgrade() -> None:
         sa.Column('school_key', sa.String(length=200), nullable=False),
         sa.Column('doc_type', sa.Enum(*DOC_TYPES, name='intakedoctype', native_enum=False,
                                       length=40), nullable=False),
-        sa.Column('label', sa.Enum('GENUINE_SAMPLE', 'ALTERED_SAMPLE', 'OTHER',
+        sa.Column('label', sa.Enum('KNOWN_GOOD_SAMPLE', 'ALTERED_SAMPLE', 'OTHER',
                                    name='referencelabel', native_enum=False, length=20),
                   nullable=False),
         sa.Column('use', sa.Enum('TRAINING', 'HELD_OUT', name='referenceuse', native_enum=False,

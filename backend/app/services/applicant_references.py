@@ -4,13 +4,13 @@ docs/applicant-intake.md, "References". Staff upload labelled samples of each is
 TOR/COE; the OCR worker reads and measures them like an upload, and staff approve the reading.
 When an applicant's upload is read, the worker sends layout measurements (text anchors,
 median word height and gap, line gap, page count). This module alone compares them with the
-latest approved genuine-sample training reference of the same school and type, and turns every
+latest approved known-good-sample training reference of the same school and type, and turns every
 difference into a reason code (services/intake.REASON_TEXT).
 
 A match with a reference sample is not proof of authenticity: it only means no rule fired.
 
 The nearest-neighbour layout model is used only when the school has approved training samples
-labelled both "genuine sample" and "altered sample" for that type. Its verdict is preliminary:
+labelled both "known-good sample" and "altered sample" for that type. Its verdict is preliminary:
 it can send a document to manual review, never pass one on its own.
 """
 
@@ -219,11 +219,11 @@ def ref_info(row: Any) -> RefInfo:
 
 def pick_reference(refs: Iterable[RefInfo], issuing_school: str,
                    doc_type: str) -> RefInfo | None:
-    """The latest (highest version) approved genuine-sample training reference of this school
+    """The latest (highest version) approved known-good-sample training reference of this school
     and type. `refs` must already be the approved ones."""
     key = school_key(issuing_school)
     candidates = [r for r in refs if r.school_key == key and r.doc_type == str(doc_type)
-                  and r.label == ReferenceLabel.GENUINE_SAMPLE
+                  and r.label == ReferenceLabel.KNOWN_GOOD_SAMPLE
                   and r.use == ReferenceUse.TRAINING]
     return max(candidates, key=lambda r: (r.version, r.id), default=None)
 
@@ -294,19 +294,19 @@ def layout_model(layout: tuple[PageLayout, ...] | None, refs: Iterable[RefInfo],
     """A 1-nearest-neighbour model over the layout features of the school's labelled samples.
 
     Unavailable until approved training samples of this school and type are labelled both
-    "genuine sample" and "altered sample". Held-out samples never train it; they give its
+    "known-good sample" and "altered sample". Held-out samples never train it; they give its
     evaluation. The verdict is preliminary.
     """
     key = school_key(issuing_school)
     eligible = [r for r in refs if r.school_key == key and r.doc_type == str(doc_type)
-                and r.label in (ReferenceLabel.GENUINE_SAMPLE, ReferenceLabel.ALTERED_SAMPLE)
+                and r.label in (ReferenceLabel.KNOWN_GOOD_SAMPLE, ReferenceLabel.ALTERED_SAMPLE)
                 and r.layout]
     training = sorted((r for r in eligible if r.use == ReferenceUse.TRAINING), key=lambda r: r.id)
     held_out = [r for r in eligible if r.use == ReferenceUse.HELD_OUT]
-    if {r.label for r in training} != {ReferenceLabel.GENUINE_SAMPLE,
+    if {r.label for r in training} != {ReferenceLabel.KNOWN_GOOD_SAMPLE,
                                        ReferenceLabel.ALTERED_SAMPLE}:
         return {"status": "unavailable",
-                "reason": "needs approved training samples labelled both genuine sample and "
+                "reason": "needs approved training samples labelled both known-good sample and "
                           "altered sample for this school and type"}
     if not layout:
         return {"status": "unavailable", "reason": "the upload's layout was not measured"}
@@ -333,7 +333,7 @@ def model_flags(model: dict) -> bool:
     """The layout model sends the document to manual review: it placed the upload with the
     altered samples, or it was not confident."""
     return model.get("status") == "evaluated" and (
-        model.get("label") != ReferenceLabel.GENUINE_SAMPLE
+        model.get("label") != ReferenceLabel.KNOWN_GOOD_SAMPLE
         or model.get("confidence", 0) < LAYOUT_MODEL_MIN_CONFIDENCE)
 
 

@@ -5,7 +5,7 @@ that reading; this module alone decides what it means. Like the station's screen
 (services/intake.py) the outcome is "passed screening" or "needs manual review", never a
 statement that a document is authentic.
 
-An upload is compared with the latest approved genuine-sample training reference of its school
+An upload is compared with the latest approved known-good-sample training reference of its school
 and type (services/applicant_references.assess). Without one it needs manual review
 (NO_REFERENCE_PROFILE). When a reference matches and no other rule fires, it passed screening;
 a match is not proof of authenticity, and staff still decide.

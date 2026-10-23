@@ -183,7 +183,7 @@ def test_supabase_data_api_lockdown_keeps_the_app_login_working():
             conn.execute(text(
                 "INSERT INTO applicant_references (issuing_school, school_key, doc_type, label, "
                 "use, version, status, rules, page_keys, attempts, created_by) SELECT "
-                "'Sample College', 'sample college', 'TRANSCRIPT_OF_RECORDS', 'GENUINE_SAMPLE', "
+                "'Sample College', 'sample college', 'TRANSCRIPT_OF_RECORDS', 'KNOWN_GOOD_SAMPLE', "
                 "'TRAINING', 1, 'QUEUED', '{}', '[]', 0, id FROM users"))
         with app_engine.connect() as conn:
             for _ in range(3):  # repeated statements: nothing prepared server-side

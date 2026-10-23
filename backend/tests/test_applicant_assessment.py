@@ -2,7 +2,7 @@
 
 services/applicant_references.assess and services/applicant_intake.assess_upload: every reason
 code fires on its own and has plain-language text; a match lets the upload pass screening; the
-layout model only runs with labelled genuine AND altered training samples, and only flags.
+layout model only runs with labelled known-good AND altered training samples, and only flags.
 All data is synthetic.
 """
 
@@ -43,7 +43,7 @@ def reading(predicted="transcript_of_records", confidence=0.9, quality_ok=True, 
     return out
 
 
-def ref(id=1, version=1, school=SCHOOL, doc_type=TOR, label="genuine_sample", use="training",
+def ref(id=1, version=1, school=SCHOOL, doc_type=TOR, label="known_good_sample", use="training",
         rules_=None, lay=None, text="transcript of records"):
     parsed = refs.parse_layout(lay if lay is not None else layout()) if lay is not False else None
     return refs.RefInfo(id=id, version=version, issuing_school=school,
@@ -113,7 +113,7 @@ def test_a_reading_without_layout_is_still_valid():
 
 # ---- the reference used -----------------------------------------------------------------------
 
-def test_the_latest_approved_genuine_training_reference_of_the_school_and_type_is_used():
+def test_the_latest_approved_known_good_training_reference_of_the_school_and_type_is_used():
     candidates = [ref(id=1, version=1), ref(id=2, version=3), ref(id=3, version=2),
                   ref(id=4, version=9, use="held_out"),
                   ref(id=5, version=9, label="altered_sample"),
@@ -204,7 +204,7 @@ def labelled(extra=()):
             *extra]
 
 
-def test_the_layout_model_needs_genuine_and_altered_training_samples():
+def test_the_layout_model_needs_known_good_and_altered_training_samples():
     model = refs.layout_model(refs.parse_layout(layout()), [ref()], SCHOOL, TOR.value)
     assert model["status"] == "unavailable"
     held_out_altered = ref(id=2, label="altered_sample", use="held_out", lay=layout(ALTERED))
@@ -219,7 +219,7 @@ def test_the_layout_model_needs_genuine_and_altered_training_samples():
 def test_the_layout_model_places_an_upload_and_records_its_version():
     model = refs.layout_model(refs.parse_layout(layout(GOOD)), labelled(), SCHOOL, TOR.value)
     assert model["status"] == "evaluated" and model["preliminary"] is True
-    assert model["label"] == "genuine_sample" and model["confidence"] == 1.0
+    assert model["label"] == "known_good_sample" and model["confidence"] == 1.0
     assert model["training_reference_ids"] == [1, 2]
     assert model["version"].startswith("layout-1nn-")
     assert model["held_out_count"] == 0 and model["held_out_accuracy"] is None

@@ -1,15 +1,15 @@
 import type { IntakeDecision, IntakeDocType, IntakeStatus, ReferenceLabel, ReferenceStatus, ReferenceUse, SecondPassStatus } from '../api'
 
 // Wording rule (screening contract): "passed screening" / "needs manual review".
-// Never "authentic", "genuine" or "verified". One exception: the dataset labels of reference
-// samples ("Genuine sample" / "Altered sample"), always shown with REFERENCE_NOTE.
+// Never "authentic", "genuine" or "verified". Reference samples carry the dataset labels
+// "Known-good sample" / "Altered sample", always shown with REFERENCE_NOTE.
 
 export const REFERENCE_NOTE =
   'Reference samples are the school’s own labelled examples. A match with a reference sample is not proof of ' +
   'authenticity: it only means no automatic check flagged the upload. Staff make the decision.'
 
 export const REFERENCE_LABEL: Record<ReferenceLabel, string> = {
-  genuine_sample: 'Genuine sample (dataset label)',
+  known_good_sample: 'Known-good sample (dataset label)',
   altered_sample: 'Altered sample (dataset label)',
   other: 'Other document (not a TOR/COE)',
 }

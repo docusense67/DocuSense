@@ -459,7 +459,7 @@ export interface ApplicationHistoryItem {
 
 // Reference samples per issuing school (docs/applicant-intake.md, "References"). The labels
 // are dataset labels; a match with a reference sample is not proof of authenticity.
-export type ReferenceLabel = 'genuine_sample' | 'altered_sample' | 'other'
+export type ReferenceLabel = 'known_good_sample' | 'altered_sample' | 'other'
 export type ReferenceUse = 'training' | 'held_out'
 export type ReferenceStatus = 'queued' | 'processing' | 'pending' | 'approved' | 'retired' | 'failed'
 export interface ReferenceRules {

@@ -110,7 +110,7 @@ class ApplicantSecondPass(Base):
 class ApplicantReference(Base):
     """A labelled reference sample of one issuing school's TOR or COE (or of an unrelated
     document, label "other"). The OCR worker reads it like an upload; staff approve the
-    reading. The latest approved genuine-sample training version for a school and type is the
+    reading. The latest approved known-good-sample training version for a school and type is the
     reference layout an upload is compared with. A match is not proof of authenticity."""
 
     __tablename__ = "applicant_references"

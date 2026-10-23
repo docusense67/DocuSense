@@ -1,6 +1,6 @@
 """Reference samples for the applicant intake (docs/applicant-intake.md, "References").
 
-Registrar/admin upload labelled samples of an issuing school's TOR or COE: label genuine
+Registrar/admin upload labelled samples of an issuing school's TOR or COE: label known-good
 sample / altered sample / other, use training / held-out. Each upload is a new version; the
 station's OCR worker reads it (a "reference" job with the same lease as a submission) and staff
 approve the reading, with a reason. Approved versions can't be edited: upload a new version and
@@ -96,7 +96,7 @@ def _check_type(doc_type: IntakeDocType, label: ReferenceLabel) -> None:
                                 "type 'unknown'")
     elif doc_type not in rules.ONLINE_TYPES:
         raise HTTPException(http.HTTP_422_UNPROCESSABLE_CONTENT,
-                            "A genuine or altered sample must be a TOR or a COE")
+                            "A known-good or altered sample must be a TOR or a COE")
 
 
 def _rules(text: str | dict | None) -> dict:

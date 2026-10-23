@@ -107,7 +107,7 @@ function Assessment({ d }: { d: IntakeDetail }) {
         {a.reference && a.findings.length === 0 && <p className="text-ink-2">No difference from the reference sample was found.</p>}
         <p className="text-xs text-ink-2" data-testid="intake-layout-model">
           Layout model: {model.status === 'evaluated'
-            ? `preliminary placement with the ${model.label === 'genuine_sample' ? 'genuine' : 'altered'} samples (${percent(model.confidence)}; ${model.version}; held-out ${model.held_out_count ?? 0}${model.held_out_accuracy != null ? `, ${percent(model.held_out_accuracy)} right` : ''})`
+            ? `preliminary placement with the ${model.label === 'known_good_sample' ? 'known-good' : 'altered'} samples (${percent(model.confidence)}; ${model.version}; held-out ${model.held_out_count ?? 0}${model.held_out_accuracy != null ? `, ${percent(model.held_out_accuracy)} right` : ''})`
             : `not used (${model.reason ?? 'unavailable'})`}
         </p>
         <p className="text-xs text-muted">{REFERENCE_NOTE}</p>

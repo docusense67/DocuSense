@@ -35,7 +35,7 @@ function UploadReference({ references }: { references: ApplicantReference[] }) {
   const qc = useQueryClient()
   const [school, setSchool] = useState('')
   const [docType, setDocType] = useState<RefDocType>('transcript_of_records')
-  const [label, setLabel] = useState<ReferenceLabel>('genuine_sample')
+  const [label, setLabel] = useState<ReferenceLabel>('known_good_sample')
   const [use, setUse] = useState<ReferenceUse>('training')
   const [required, setRequired] = useState('student_name')
   const [labels, setLabels] = useState('')
@@ -73,7 +73,7 @@ function UploadReference({ references }: { references: ApplicantReference[] }) {
           <Select label="Document type" value={docType} onChange={(e) => {
             const value = e.target.value as RefDocType
             setDocType(value)
-            setLabel(value === 'unknown' ? 'other' : label === 'other' ? 'genuine_sample' : label)
+            setLabel(value === 'unknown' ? 'other' : label === 'other' ? 'known_good_sample' : label)
           }}>
             <option value="transcript_of_records">{DOC_TYPE_LABEL.transcript_of_records}</option>
             <option value="certificate_of_enrollment">{DOC_TYPE_LABEL.certificate_of_enrollment}</option>
@@ -175,8 +175,8 @@ export function References() {
     <Page title="Reference samples">
       <p className="rounded-md border border-line bg-surface p-3 text-sm text-ink-2" data-testid="reference-note">{REFERENCE_NOTE}</p>
       <p className="text-sm text-ink-2">
-        An online upload is compared with the latest approved training sample labelled genuine sample of its school and
-        type. With samples labelled both genuine and altered, a layout model gives a preliminary placement too; held-out
+        An online upload is compared with the latest approved training sample labelled known-good sample of its school and
+        type. With samples labelled both known-good and altered, a layout model gives a preliminary placement too; held-out
         samples only evaluate the models.
       </p>
       <UploadReference references={all.data ?? []} />

@@ -37,7 +37,7 @@ The database has no CHECK constraint on these columns. The application is the on
 | ScanMode | `scan_sessions.mode` | `SINGLE` → single, `BULK` → bulk |
 | ValidationResult | `validation_records.result`, `validation_records.final_result` | `VALID`, `INVALID`, `NEEDS_REVIEW` (same in the API) |
 | IntakeStatus | `intake_documents.status` | `SCREENED` → screened, `ACCEPTED` → accepted, `REJECTED` → rejected, `RESUBMISSION_REQUESTED` → resubmission_requested, `DATA_REVIEWED` → data_reviewed, `LINKED` → linked (the last two from migration `d5a8c3e1f2b7`, S-06/S-07) |
-| ReferenceLabel | `applicant_references.label` | `GENUINE_SAMPLE` → genuine_sample, `ALTERED_SAMPLE` → altered_sample, `OTHER` → other (dataset labels of reference samples, [applicant-intake.md](applicant-intake.md); a match is not proof of authenticity) |
+| ReferenceLabel | `applicant_references.label` | `KNOWN_GOOD_SAMPLE` → known_good_sample, `ALTERED_SAMPLE` → altered_sample, `OTHER` → other (dataset labels of reference samples, [applicant-intake.md](applicant-intake.md); a match is not proof of authenticity) |
 | ReferenceUse | `applicant_references.use` | `TRAINING` → training, `HELD_OUT` → held_out |
 | ReferenceStatus | `applicant_references.status` | `QUEUED`, `PROCESSING`, `PENDING`, `APPROVED`, `RETIRED`, `FAILED` (lower case in the API) |
 | SecondPassStatus | `applicant_second_passes.status` | `QUEUED`, `PROCESSING`, `DONE`, `FAILED` (lower case in the API) |

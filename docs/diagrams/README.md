@@ -707,7 +707,7 @@ classDiagram
     }
     class ReferenceLabel {
         <<enumeration>>
-        GENUINE_SAMPLE = genuine_sample
+        KNOWN_GOOD_SAMPLE = known_good_sample
         ALTERED_SAMPLE = altered_sample
         OTHER = other
     }

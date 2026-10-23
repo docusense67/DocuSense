@@ -141,7 +141,7 @@ class ReferenceLabel(StrEnum):
     with a reference sample is not proof of authenticity.
     """
 
-    GENUINE_SAMPLE = "genuine_sample"  # a known-good sample from the issuing school
+    KNOWN_GOOD_SAMPLE = "known_good_sample"  # a known-good sample from the issuing school
     ALTERED_SAMPLE = "altered_sample"  # a known-altered sample (trains the layout model)
     OTHER = "other"  # not a TOR/COE: trains the classifier's "unknown" class
 
