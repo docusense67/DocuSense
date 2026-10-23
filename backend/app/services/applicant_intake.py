@@ -5,19 +5,24 @@ that reading; this module alone decides what it means. Like the station's screen
 (services/intake.py) the outcome is "passed screening" or "needs manual review", never a
 statement that a document is authentic.
 
-There are no reference layouts for other schools' documents yet, so every online submission
-needs manual review (NO_REFERENCE_PROFILE). The other rules still run so staff see why else a
-person should look closely.
+An upload is compared with the latest approved genuine-sample training reference of its school
+and type (services/applicant_references.assess). Without one it needs manual review
+(NO_REFERENCE_PROFILE). When a reference matches and no other rule fires, it passed screening;
+a match is not proof of authenticity, and staff still decide.
 """
 
 import hashlib
 import math
+import re
 import secrets
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from enum import StrEnum
 from typing import Any
 
 from app.models.enums import ApplicantSubmissionStatus, IntakeDecision, IntakeDocType
+from app.services import applicant_references as references
 from app.services import intake as screening
 from app.timeutil import as_utc
 
@@ -53,6 +58,7 @@ class Reading:
     doc_type: IntakeDocType  # UNKNOWN for anything that is not an online type
     confidence: float
     fields: dict[str, dict]  # name -> {"value": str|None, "confidence": float|None}
+    layout: tuple[references.PageLayout, ...] | None = None  # None: not measured
 
 
 def _number(value: Any, where: str) -> float:
@@ -99,17 +105,26 @@ def parse_reading(result: Any) -> Reading:
                              "confidence": None if conf is None
                              else _number(conf, f"reading.fields.{name}.confidence")}
 
+    try:
+        layout = references.parse_layout(result.get("layout"))
+    except references.InvalidLayout as e:
+        raise InvalidReading(str(e)) from None
+
     known = {t.value for t in ONLINE_TYPES}
     return Reading(quality_ok=quality["ok"], predicted=predicted,
                    doc_type=IntakeDocType(predicted) if predicted in known
                    else IntakeDocType.UNKNOWN,
-                   confidence=confidence, fields=fields)
+                   confidence=confidence, fields=fields, layout=layout)
 
 
 def reasons_for(reading: Reading, declared: IntakeDocType,
-                thresholds: screening.ThresholdSource = screening.DEFAULTS) -> list[str]:
-    """Every rule that fires, in rule order."""
-    reasons = [screening.NO_REFERENCE_PROFILE]  # until reference layouts per school exist
+                thresholds: screening.ThresholdSource = screening.DEFAULTS,
+                assessment: references.Assessment | None = None) -> list[str]:
+    """Every rule that fires, in rule order. Without an assessment (or without a reference in
+    it) the upload has no reference layout to be compared with."""
+    reasons = []
+    if assessment is None or assessment.reference is None:
+        reasons.append(screening.NO_REFERENCE_PROFILE)
     if not reading.quality_ok:
         reasons.append(screening.UPLOAD_QUALITY_NOT_OK)
     if reading.doc_type == IntakeDocType.UNKNOWN:
@@ -118,17 +133,62 @@ def reasons_for(reading: Reading, declared: IntakeDocType,
         reasons.append(screening.DECLARED_TYPE_MISMATCH)
     if reading.confidence < thresholds.min_doc_type_confidence:
         reasons.append(screening.DOC_TYPE_LOW_CONFIDENCE)
+    if assessment is not None:
+        reasons.extend(r for r in assessment.reasons if r not in reasons)
     return reasons
+
+
+@dataclass(frozen=True)
+class Outcome:
+    decision: IntakeDecision
+    reasons: list[str]
+    reading: Reading
+    assessment: references.Assessment
+
+
+def assess_upload(result: Any, declared: IntakeDocType, issuing_school: str,
+                  refs: Sequence[references.RefInfo] = (),
+                  thresholds: screening.ThresholdSource | None = None) -> Outcome:
+    """The decision for one reading, compared with the school's approved references.
+    Raises InvalidReading."""
+    reading = parse_reading(result)
+    assessment = references.assess(reading.layout, reading.fields, issuing_school,
+                                   declared.value, refs)
+    reasons = reasons_for(reading, declared, thresholds or screening.DEFAULTS, assessment)
+    decision = IntakeDecision.MANUAL_REVIEW if reasons else IntakeDecision.PASSED_SCREENING
+    return Outcome(decision, reasons, reading, assessment)
 
 
 def decide(result: Any, declared: IntakeDocType,
            thresholds: screening.ThresholdSource | None = None
            ) -> tuple[IntakeDecision, list[str], Reading]:
-    """(decision, reasons, reading). Raises InvalidReading."""
+    """(decision, reasons, reading) without references (so NO_REFERENCE_PROFILE always
+    fires). Raises InvalidReading."""
     reading = parse_reading(result)
     reasons = reasons_for(reading, declared, thresholds or screening.DEFAULTS)
     decision = IntakeDecision.MANUAL_REVIEW if reasons else IntakeDecision.PASSED_SCREENING
     return decision, reasons, reading
+
+
+# ---- second OCR pass --------------------------------------------------------------------------
+
+def _comparable(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "")).strip().casefold()
+
+
+def compare_passes(first: dict, second: dict) -> list[str]:
+    """Field names whose values differ between the two OCR passes (case and spacing don't
+    count). A field only one pass read is a disagreement too. Names only, never values."""
+    def values(fields: dict) -> dict[str, str]:
+        out = {}
+        for name, item in (fields or {}).items():
+            value = item.get("value") if isinstance(item, dict) else item
+            if _comparable(value):
+                out[str(name)] = _comparable(value)
+        return out
+
+    a, b = values(first), values(second)
+    return sorted(name for name in set(a) | set(b) if a.get(name) != b.get(name))
 
 
 def document_type(reading: Reading, declared: IntakeDocType) -> IntakeDocType:
@@ -156,18 +216,18 @@ def lease_held(stored_hash: str | None, expires_at: datetime | None, token: str,
             and secrets.compare_digest(stored_hash, hash_token(token)))
 
 
-def claimable(status: ApplicantSubmissionStatus, expires_at: datetime | None,
-              now: datetime) -> bool:
-    """Queued, or processing with a lease that ran out (the worker stopped)."""
-    return status == ApplicantSubmissionStatus.QUEUED or (
-        status == ApplicantSubmissionStatus.PROCESSING
-        and (expires_at is None or as_utc(expires_at) <= now))
+def claimable(status: StrEnum, expires_at: datetime | None, now: datetime) -> bool:
+    """Queued, or processing with a lease that ran out (the worker stopped). The same for
+    every job kind: a submission, a reference sample, a second pass (their status enums all
+    have "queued" and "processing")."""
+    return status.value == "queued" or (
+        status.value == "processing" and (expires_at is None or as_utc(expires_at) <= now))
 
 
-def after_failure(attempts: int, max_attempts: int) -> ApplicantSubmissionStatus:
+def after_failure[S: StrEnum](attempts: int, max_attempts: int,
+                              statuses: type[S] = ApplicantSubmissionStatus) -> S:
     """A failed or abandoned read: try again until the attempts are used up."""
-    return (ApplicantSubmissionStatus.FAILED if attempts >= max_attempts
-            else ApplicantSubmissionStatus.QUEUED)
+    return statuses("failed" if attempts >= max_attempts else "queued")
 
 
 def clean_error(text: Any) -> str:

@@ -44,7 +44,7 @@ from app.models.enums import (
     IntakeStatus,
     Role,
 )
-from app.services import audit
+from app.services import applicant_jobs, applicant_report, audit
 from app.services import intake as screening
 from app.services.scan_images import InvalidScanImage, compress_page
 from app.services.scanning import IMAGE_MEDIA_TYPES
@@ -304,14 +304,17 @@ def intake_detail(intake_id: int, _: User = Depends(staff), db: Session = Depend
     doc = get_or_404(db, IntakeDocument, intake_id)
     result = doc.screening_result or {}
     reviewer = db.get(User, doc.reviewed_by) if doc.reviewed_by else None
+    # Online uploads: the submission's own entries (second pass, ...) belong to the history too.
     history = db.execute(
         select(AuditLog, User.email).outerjoin(User, User.id == AuditLog.user_id)
-        .where(AuditLog.entity_type == ENTITY, AuditLog.entity_id == str(doc.id))
+        .where(applicant_report.history_filter(doc.submission_id, doc.id))
         .order_by(AuditLog.id)).all()
     station = db.get(ScanStation, doc.station_id)
     student = db.get(Student, doc.student_id) if doc.student_id else None
     submission = db.get(ApplicantSubmission, doc.submission_id) if doc.submission_id else None
     applicant = db.get(User, submission.applicant_id) if submission else None
+    uploader = db.get(User, submission.uploaded_by) if submission and submission.uploaded_by \
+        else None
     return {
         **_row(doc),
         "station": station.name if station else None,
@@ -320,7 +323,13 @@ def intake_detail(intake_id: int, _: User = Depends(staff), db: Session = Depend
                        "declared_type": submission.declared_type,
                        "issuing_school": submission.issuing_school,
                        "applicant_email": applicant.email if applicant else None,
+                       "uploaded_by": uploader.email if uploader else None,
                        "submitted_at": submission.submitted_at} if submission else None,
+        # Online uploads: the comparison with the school's reference sample (backend-made)
+        # and the second OCR pass, queued once staff accept the document.
+        "assessment": _block(result, "assessment") if submission else None,
+        "second_pass": applicant_report.second_pass_view(submission.second_pass, result)
+        if submission else None,
         "reasons_explained": [{"code": r, "text": screening.REASON_TEXT.get(r, r)}
                               for r in doc.reasons],
         "indicators": [i for i in result.get("indicators") or [] if isinstance(i, dict)],
@@ -387,11 +396,14 @@ def review_intake(intake_id: int, body: IntakeReviewIn, request: Request,
     doc.reviewed_by = actor.id
     doc.reviewed_at = utcnow()
     doc.review_reason = reason
+    ip = client_ip(request)
     audit.record(db, "intake_document_reviewed", user_id=actor.id, entity_type=ENTITY,
                  entity_id=doc.id, old_value={"status": old_status.value},
                  new_value={"status": doc.status.value, "action": body.action.value,
                             "decision": doc.decision.value, "reason": reason},
-                 ip_address=client_ip(request))
+                 ip_address=ip)
+    if doc.status == IntakeStatus.ACCEPTED:  # online uploads: second OCR pass
+        applicant_jobs.queue_second_pass(db, doc, actor.id, ip)
     db.commit()
     return _row(doc)
 

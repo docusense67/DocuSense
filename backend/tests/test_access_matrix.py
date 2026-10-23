@@ -32,6 +32,9 @@ STATION = {
     "POST /api/station/applicant-jobs/claim",
     "GET /api/station/applicant-jobs/{submission_id}/pages/{number}",
     "POST /api/station/applicant-jobs/{submission_id}/complete",
+    "POST /api/station/applicant-jobs/{submission_id}/second-pass",  # after staff accept
+    "GET /api/station/applicant-references/{reference_id}/pages/{number}",
+    "POST /api/station/applicant-references/{reference_id}/complete",
     # cloud motor control: the Pi's relay polls its own commands (docs/cloud-motor-control.md)
     "GET /api/station/mechanism/commands",
     "POST /api/station/mechanism/commands/{command_id}/result",
@@ -60,6 +63,8 @@ CATALOG = {"GET /api/programs", "GET /api/subjects", "GET /api/terms"}
 STUDENT = ANY_USER | CATALOG | {
     "GET /api/students/me",
     "GET /api/students/me/records",
+    "GET /api/students/me/advisers",  # own adviser only (docs/applicant-intake.md)
+    "GET /api/students/me/applications",  # own past online submissions, plain status only
     "GET /api/requests",
     "POST /api/requests",
     "GET /api/requests/eligibility",
@@ -79,6 +84,7 @@ GRADES = {
 }
 TEACHER = ANY_USER | CATALOG | GRADES | {
     "GET /api/advisory",  # own advisory classes only (S-08)
+    "GET /api/advisees",  # students assigned to this teacher only (per-student advisers)
 }
 
 USER_ADMIN = {  # registrars: student/teacher accounts; admins: every account
@@ -132,6 +138,31 @@ INTAKE_STAFF = {
     "GET /api/applicant-submissions",
     "GET /api/applicant-submissions/{submission_id}/pages/{number}",
     "POST /api/applicant-submissions/{submission_id}/retry",
+    # ... staff upload on an existing applicant login's behalf (audited)
+    "POST /api/applicant-submissions",
+    "POST /api/applicant-submissions/{submission_id}/pages",
+    "DELETE /api/applicant-submissions/{submission_id}/pages/{number}",
+    "POST /api/applicant-submissions/{submission_id}/submit",
+    # ... per-submission report (both OCR passes, findings, versions): staff only
+    "GET /api/applicant-submissions/{submission_id}/report",
+    # ... labelled reference samples per issuing school and type
+    "GET /api/applicant-references",
+    "POST /api/applicant-references",
+    "GET /api/applicant-references/{reference_id}",
+    "PATCH /api/applicant-references/{reference_id}",
+    "GET /api/applicant-references/{reference_id}/pages/{number}",
+    "POST /api/applicant-references/{reference_id}/approve",
+    "POST /api/applicant-references/{reference_id}/retire",
+    "POST /api/applicant-references/{reference_id}/retry",
+}
+
+# Per-student advisers (one teacher-adviser per student per term, with an audited reason):
+# registrars assign them, administrators may too. Distinct from the S-08 class advisers
+# (/section-advisers), which stay registrar-only.
+STUDENT_ADVISERS = {
+    "GET /api/student-advisers",
+    "PUT /api/student-advisers",
+    "GET /api/student-advisers/options",
 }
 
 # An applicant (not yet a student) only sends their own documents; no records. The catalog
@@ -147,7 +178,7 @@ APPLICANT = ANY_USER | CATALOG | {
     "POST /api/applicant/submissions/{submission_id}/withdraw",
 }
 
-REGISTRAR = ANY_USER | CATALOG | GRADES | USER_ADMIN | INTAKE_STAFF | {
+REGISTRAR = ANY_USER | CATALOG | GRADES | USER_ADMIN | INTAKE_STAFF | STUDENT_ADVISERS | {
     "GET /api/dashboard/registrar",
     "GET /api/audit-logs",
     # records
@@ -198,7 +229,7 @@ REGISTRAR = ANY_USER | CATALOG | GRADES | USER_ADMIN | INTAKE_STAFF | {
     "POST /api/documents/{document_id}/reopen-download",
 }
 
-ADMIN = ANY_USER | CATALOG | USER_ADMIN | INTAKE_STAFF | {
+ADMIN = ANY_USER | CATALOG | USER_ADMIN | INTAKE_STAFF | STUDENT_ADVISERS | {
     "GET /api/intake/settings",  # screening thresholds: admin only
     "PUT /api/intake/settings",
     "POST /api/users",  # staff logins only

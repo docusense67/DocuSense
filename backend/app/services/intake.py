@@ -38,6 +38,15 @@ ROUTING_JAM = "routing_jam"
 UPLOAD_QUALITY_NOT_OK = "upload_quality_not_ok"
 NO_REFERENCE_PROFILE = "no_reference_profile"
 DECLARED_TYPE_MISMATCH = "declared_type_mismatch"
+# Online uploads compared with a school's approved reference sample
+# (services/applicant_references.assess).
+LAYOUT_NOT_MEASURED = "layout_not_measured"
+REFERENCE_FIELD_MISSING = "reference_field_missing"
+PAGE_COUNT_DIFFERS = "page_count_differs"
+LAYOUT_SHIFTED = "layout_shifted"
+REFERENCE_REGIONS_MISSING = "reference_regions_missing"
+TEXT_SPACING_DIFFERS = "text_spacing_differs"
+LAYOUT_MODEL_REVIEW = "layout_model_review"
 
 REASON_TEXT = {
     QUALITY_NOT_OK: "The photo of the page was not usable (blurred, too dark or bright, glare, "
@@ -55,6 +64,20 @@ REASON_TEXT = {
     NO_REFERENCE_PROFILE: "There is no reference layout for documents from this school yet, so "
                           "a person must look at it.",
     DECLARED_TYPE_MISMATCH: "The document read differs from the type the applicant chose.",
+    LAYOUT_NOT_MEASURED: "The page layout could not be measured, so it was not compared with "
+                         "the school's reference sample.",
+    REFERENCE_FIELD_MISSING: "A field this school's documents have (per its reference sample) "
+                             "was not found.",
+    PAGE_COUNT_DIFFERS: "The number of pages differs from the school's reference sample; check "
+                        "for missing or extra continuation pages.",
+    LAYOUT_SHIFTED: "Some headings or labels are not where they are on the school's reference "
+                    "sample.",
+    REFERENCE_REGIONS_MISSING: "Some headings or labels on the school's reference sample were "
+                               "not found on this document.",
+    TEXT_SPACING_DIFFERS: "Text size or spacing differs clearly from the school's reference "
+                          "sample.",
+    LAYOUT_MODEL_REVIEW: "The layout model (trained on the school's labelled samples) did not "
+                         "place this document with the known-good samples. Preliminary only.",
 }
 
 

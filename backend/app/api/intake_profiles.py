@@ -27,7 +27,7 @@ from app.api.students import StudentFields, add_student
 from app.db import get_db
 from app.models import ApplicantSubmission, IntakeDocument, Student, User
 from app.models.enums import IntakeDecision, IntakeDocType, IntakeStatus, Role
-from app.services import audit
+from app.services import applicant_jobs, audit
 from app.services import intake_fields as fields
 from app.timeutil import utcnow
 
@@ -166,6 +166,7 @@ def save_intake_fields(intake_id: int, body: FieldsIn, request: Request,
                                 "decision": doc.decision.value, "reason": None,
                                 "implicit": "accepted by reviewing its fields"},
                      ip_address=ip)
+        applicant_jobs.queue_second_pass(db, doc, actor.id, ip)  # online uploads only
 
     old = {"status": doc.status.value, "doc_type": doc.doc_type.value}
     doc.doc_type = doc_type

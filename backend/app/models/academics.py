@@ -86,6 +86,28 @@ class SectionAdviser(Base):
     term: Mapped[Term] = relationship()
 
 
+class StudentAdviser(Base):
+    """Per-student adviser for one academic term (docs/applicant-intake.md, "Advisers").
+
+    Distinct from SectionAdviser (S-08, the class adviser of a block section): this is one
+    teacher-adviser for one student, assigned by the registrar with an audited reason. The
+    teacher sees only their own advisees; the student sees their own adviser.
+    """
+
+    __tablename__ = "student_advisers"
+    __table_args__ = (UniqueConstraint("student_id", "term_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
+    term_id: Mapped[int] = mapped_column(ForeignKey("terms.id"))
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("teachers.id"), index=True)
+    assigned_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                  server_default=func.now())
+
+    term: Mapped[Term] = relationship()
+
+
 class Enrollment(Base):
     __tablename__ = "enrollments"
     __table_args__ = (UniqueConstraint("student_id", "class_section_id"),)

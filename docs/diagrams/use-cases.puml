@@ -41,7 +41,7 @@ rectangle "DocuSense" {
   }
   package "Academic records" as records {
     usecase "Encode and submit grades" as O_R1
-    usecase "Maintain students, terms,\nsections, advisers" as O_R2
+    usecase "Maintain students, terms,\nsections, class and\nstudent advisers" as O_R2
     usecase "View own or advisory records" as O_R3
   }
   package "Outgoing document requests" as requests {
@@ -58,6 +58,7 @@ rectangle "DocuSense" {
   }
   package "Applicant intake (online uploads)" as applicant {
     usecase "Upload a TOR / COE,\nOCR reading, staff review" as O_P1
+    usecase "Reference samples,\nsecond OCR pass, reports" as O_P2
   }
   package "Administration & audit" as admin {
     usecase "Staff logins, templates,\nstations, thresholds" as O_D1
@@ -77,11 +78,13 @@ Registrar -- admin
 Operator -- validation
 Operator -- intake
 Admin -- accounts
+Admin -- records
 Admin -- intake
 Admin -- admin
 validation -- ScanStation
 intake -- IntakeStation
 Applicant -- applicant
+Student -- applicant
 Registrar -- applicant
 Admin -- applicant
 applicant -- IntakeStation

@@ -47,6 +47,13 @@ classDiagram
         int term_id FK
         str section_code
     }
+    class StudentAdviser["StudentAdviser (student_advisers)"] {
+        int id PK
+        int assigned_by FK
+        int student_id FK
+        int teacher_id FK
+        int term_id FK
+    }
     class Subject["Subject (subjects)"] {
         int id PK
         int program_id FK
@@ -101,6 +108,10 @@ classDiagram
     SectionAdviser "*" --> "0..1" User : assigned_by
     SectionAdviser "*" --> "1" Teacher : teacher_id
     SectionAdviser "*" --> "1" Term : term_id
+    StudentAdviser "*" --> "0..1" User : assigned_by
+    StudentAdviser "*" --> "1" Student : student_id
+    StudentAdviser "*" --> "1" Teacher : teacher_id
+    StudentAdviser "*" --> "1" Term : term_id
     Subject "*" --> "0..1" Program : program_id
     Enrollment ..> EnrollmentStatus
     Grade ..> GradeRemark

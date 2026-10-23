@@ -48,21 +48,23 @@ AREAS: dict[str, tuple[str, tuple[str, ...]]] = {
     "people": ("People and accounts", ("students", "teachers", "user_sessions", "users")),
     "academics": ("Academics: programs, subjects, terms, sections, advisers, grades", (
         "class_sections", "enrollments", "grade_change_requests", "grades", "programs",
-        "section_advisers", "subjects", "terms")),
+        "section_advisers", "student_advisers", "subjects", "terms")),
     "documents": ("Requests, generated documents and templates", (
         "document_requests", "document_templates", "generated_documents")),
     "validation": ("Validation of printed documents, scan stations and the camera mechanism", (
         "mechanism_commands", "mechanism_station_states", "scan_sessions", "scan_stations",
         "scanned_documents", "station_event_receipts", "validation_records")),
     "intake": ("Incoming-document screening and applicant uploads", (
-        "applicant_pages", "applicant_submissions", "intake_batches", "intake_documents",
-        "intake_settings")),
+        "applicant_pages", "applicant_references", "applicant_second_passes",
+        "applicant_submissions", "intake_batches", "intake_documents", "intake_settings")),
     "audit": ("Audit trail and notifications", ("audit_logs", "notification_reads")),
 }
 
 # Attributes shown besides the automatic ones (primary key, foreign keys, unique columns, enums,
 # flags): the business fields a reader needs to follow the workflows.
 KEY_FIELDS: dict[str, tuple[str, ...]] = {
+    "applicant_references": ("issuing_school", "reading", "rules", "version"),
+    "applicant_second_passes": ("disagreements", "reading"),
     "audit_logs": ("action", "entity_id", "entity_type", "timestamp"),
     "class_sections": ("grades_submitted_at", "section_code"),
     "document_requests": ("copies", "processing_note", "purpose", "requested_at"),

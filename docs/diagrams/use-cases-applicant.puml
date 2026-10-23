@@ -25,6 +25,7 @@ skinparam note {
 }
 
 actor "Applicant\n(not yet a student)" as Applicant
+actor "Student" as Student
 actor "Registrar" as Registrar
 actor "Administrator" as Admin
 actor "Intake station\n(OCR worker)" as IntakeStation <<system>>
@@ -41,25 +42,48 @@ rectangle "DocuSense" {
     ' @routes AP_WATCH: GET /api/applicant-submissions | GET /api/applicant-submissions/{submission_id}/pages/{number} | POST /api/applicant-submissions/{submission_id}/retry
     usecase "Read an upload: OCR,\ndocument type, fields\n(lease; extracts only)" as AP_READ
     ' @routes AP_READ: POST /api/station/applicant-jobs/claim | GET /api/station/applicant-jobs/{submission_id}/pages/{number} | POST /api/station/applicant-jobs/{submission_id}/complete
-    usecase "Decide: needs manual review\n(no reference layout yet)" as AP_DECIDE
+    usecase "Decide: compare with the school's\nreference sample (passed screening /\nneeds manual review)" as AP_DECIDE
+    usecase "Upload for an applicant login\n(start, add pages, submit)" as AP_ON_BEHALF
+    ' @routes AP_ON_BEHALF: POST /api/applicant-submissions | POST /api/applicant-submissions/{submission_id}/pages | DELETE /api/applicant-submissions/{submission_id}/pages/{number} | POST /api/applicant-submissions/{submission_id}/submit
+    usecase "Export a submission report\n(JSON, CSV, PDF)" as AP_REPORT
+    ' @routes AP_REPORT: GET /api/applicant-submissions/{submission_id}/report
+    usecase "Manage labelled reference\nsamples per school and type\n(versions, approve, retire)" as AP_REFERENCES
+    ' @routes AP_REFERENCES: GET /api/applicant-references | POST /api/applicant-references | GET /api/applicant-references/{reference_id} | PATCH /api/applicant-references/{reference_id} | GET /api/applicant-references/{reference_id}/pages/{number} | POST /api/applicant-references/{reference_id}/approve | POST /api/applicant-references/{reference_id}/retire | POST /api/applicant-references/{reference_id}/retry
+    usecase "Read a reference sample\n(lease; extracts and measures)" as AP_READ_REF
+    ' @routes AP_READ_REF: GET /api/station/applicant-references/{reference_id}/pages/{number} | POST /api/station/applicant-references/{reference_id}/complete
+    usecase "Second OCR pass after staff\naccept (independent\npreprocessing)" as AP_SECOND
+    ' @routes AP_SECOND: POST /api/station/applicant-jobs/{submission_id}/second-pass
+    usecase "View past applications\n(plain status only)" as AP_HISTORY
+    ' @routes AP_HISTORY: GET /api/students/me/applications
   }
 }
 
 Applicant -- AP_SEND
+Student -- AP_HISTORY
 Registrar -- AP_LOGINS
 Registrar -- AP_WATCH
+Registrar -- AP_ON_BEHALF
+Registrar -- AP_REPORT
+Registrar -- AP_REFERENCES
 Admin -- AP_LOGINS
 Admin -- AP_WATCH
+Admin -- AP_ON_BEHALF
+Admin -- AP_REPORT
+Admin -- AP_REFERENCES
 AP_READ -- IntakeStation
+AP_READ_REF -- IntakeStation
+AP_SECOND -- IntakeStation
 
 AP_SEND <.. AP_WITHDRAW : <<extend>>
 AP_READ ..> AP_DECIDE : <<include>>
 
 note as N1
-  The worker only extracts; the backend
-  decides. A read upload becomes an intake
-  document in the staff review queue; when
-  it is linked to a student, the applicant
-  login becomes that student's login.
+  The worker only extracts and measures;
+  the backend decides. A read upload becomes
+  an intake document in the staff review
+  queue; when it is linked to a student, the
+  applicant login becomes that student's
+  login. A match with a reference sample is
+  not proof of authenticity.
 end note
 @enduml

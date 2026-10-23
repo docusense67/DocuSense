@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api import (
     applicant_intake,
+    applicant_references,
     audit,
     auth,
     catalog,
@@ -23,6 +24,7 @@ from app.api import (
     requests,
     scanning,
     stations,
+    student_advisers,
     students,
     templates,
     users,
@@ -92,7 +94,8 @@ async def security_headers(request: Request, call_next):
 app.include_router(auth.router, prefix="/api")
 for module in (users, students, catalog, grades, templates, requests, documents, stations,
                scanning, intake, intake_profiles, intake_operator, dashboard, audit,
-               internal, mechanism, mechanism_relay, notifications, applicant_intake):
+               internal, mechanism, mechanism_relay, notifications, applicant_intake,
+               applicant_references, student_advisers):
     app.include_router(module.router, prefix="/api")
 
 

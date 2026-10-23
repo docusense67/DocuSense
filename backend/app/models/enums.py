@@ -134,6 +134,46 @@ class ApplicantSubmissionStatus(StrEnum):
     WITHDRAWN = "withdrawn"  # by the applicant, before it was read
 
 
+class ReferenceLabel(StrEnum):
+    """Dataset label of a reference sample (docs/applicant-intake.md, "References").
+
+    These are labels of the school's own sample set, never a verdict about an upload: a match
+    with a reference sample is not proof of authenticity.
+    """
+
+    GENUINE_SAMPLE = "genuine_sample"  # a known-good sample from the issuing school
+    ALTERED_SAMPLE = "altered_sample"  # a known-altered sample (trains the layout model)
+    OTHER = "other"  # not a TOR/COE: trains the classifier's "unknown" class
+
+
+class ReferenceUse(StrEnum):
+    TRAINING = "training"  # reference layout, classifier corpus, layout model
+    HELD_OUT = "held_out"  # evaluation only: never trains anything
+
+
+class ReferenceStatus(StrEnum):
+    """queued -> processing -> pending (read, waiting for approval) -> approved -> retired.
+
+    Approved versions can't be edited: upload a new version and retire the old one.
+    """
+
+    QUEUED = "queued"  # waiting for the OCR worker to read it
+    PROCESSING = "processing"  # a worker holds the lease
+    PENDING = "pending"  # read; waiting for staff approval
+    APPROVED = "approved"
+    RETIRED = "retired"
+    FAILED = "failed"  # the worker could not read it (staff may queue it again)
+
+
+class SecondPassStatus(StrEnum):
+    """The second OCR pass, queued when staff accept an online document."""
+
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    DONE = "done"
+    FAILED = "failed"
+
+
 class IntakeDecision(StrEnum):
     """Screening outcome. Never 'authentic'/'genuine'/'verified' (contract wording rule)."""
 

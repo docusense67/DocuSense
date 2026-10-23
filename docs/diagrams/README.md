@@ -108,6 +108,7 @@ classDiagram
     class Grade["Grade (grades)"]
     class Program["Program (programs)"]
     class SectionAdviser["SectionAdviser (section_advisers)"]
+    class StudentAdviser["StudentAdviser (student_advisers)"]
     class Subject["Subject (subjects)"]
     class Term["Term (terms)"]
     %% documents: Requests, generated documents and templates
@@ -124,6 +125,8 @@ classDiagram
     class ValidationRecord["ValidationRecord (validation_records)"]
     %% intake: Incoming-document screening and applicant uploads
     class ApplicantPage["ApplicantPage (applicant_pages)"]
+    class ApplicantReference["ApplicantReference (applicant_references)"]
+    class ApplicantSecondPass["ApplicantSecondPass (applicant_second_passes)"]
     class ApplicantSubmission["ApplicantSubmission (applicant_submissions)"]
     class IntakeBatch["IntakeBatch (intake_batches)"]
     class IntakeDocument["IntakeDocument (intake_documents)"]
@@ -132,6 +135,10 @@ classDiagram
     class AuditLog["AuditLog (audit_logs)"]
     class NotificationRead["NotificationRead (notification_reads)"]
     ApplicantPage "*" --> "1" ApplicantSubmission : submission_id
+    ApplicantReference "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantReference "*" --> "0..1" ApplicantReference : replaces_id
+    ApplicantSecondPass "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantSecondPass "0..1" --> "1" ApplicantSubmission : submission_id
     ApplicantSubmission "*" --> "0..1" IntakeDocument : intake_document_id
     ApplicantSubmission "*" --> "0..1" ScanStation : lease_station_id
     AuditLog "*" --> "0..1" User : user_id
@@ -162,11 +169,14 @@ classDiagram
     StationEventReceipt "*" --> "1" ScanStation : station_id
     Student "*" --> "0..1" Program : program_id
     Student "0..1" --> "0..1" User : user_id
+    StudentAdviser "*" --> "1" Student : student_id
+    StudentAdviser "*" --> "1" Teacher : teacher_id
+    StudentAdviser "*" --> "1" Term : term_id
     Subject "*" --> "0..1" Program : program_id
     Teacher "0..1" --> "0..1" User : user_id
     UserSession "*" --> "1" User : user_id
     ValidationRecord "0..1" --> "1" ScannedDocument : scanned_document_id
-    note for User "Also referenced by 18 staff columns (created_by, reviewed_by, ...),<br>shown in the area diagrams"
+    note for User "Also referenced by 23 staff columns (created_by, reviewed_by, ...),<br>shown in the area diagrams"
 ```
 
 ### People and accounts
@@ -290,6 +300,13 @@ classDiagram
         int term_id FK
         str section_code
     }
+    class StudentAdviser["StudentAdviser (student_advisers)"] {
+        int id PK
+        int assigned_by FK
+        int student_id FK
+        int teacher_id FK
+        int term_id FK
+    }
     class Subject["Subject (subjects)"] {
         int id PK
         int program_id FK
@@ -344,6 +361,10 @@ classDiagram
     SectionAdviser "*" --> "0..1" User : assigned_by
     SectionAdviser "*" --> "1" Teacher : teacher_id
     SectionAdviser "*" --> "1" Term : term_id
+    StudentAdviser "*" --> "0..1" User : assigned_by
+    StudentAdviser "*" --> "1" Student : student_id
+    StudentAdviser "*" --> "1" Teacher : teacher_id
+    StudentAdviser "*" --> "1" Term : term_id
     Subject "*" --> "0..1" Program : program_id
     Enrollment ..> EnrollmentStatus
     Grade ..> GradeRemark
@@ -574,11 +595,36 @@ classDiagram
         int id PK
         int submission_id FK
     }
+    class ApplicantReference["ApplicantReference (applicant_references)"] {
+        int id PK
+        int created_by FK
+        int decided_by FK
+        int lease_station_id FK
+        int replaces_id FK
+        IntakeDocType doc_type
+        str issuing_school
+        ReferenceLabel label
+        json reading
+        json rules
+        ReferenceStatus status
+        ReferenceUse use
+        int version
+    }
+    class ApplicantSecondPass["ApplicantSecondPass (applicant_second_passes)"] {
+        int id PK
+        int lease_station_id FK
+        int queued_by FK
+        int submission_id FK,UK
+        json disagreements
+        json reading
+        SecondPassStatus status
+    }
     class ApplicantSubmission["ApplicantSubmission (applicant_submissions)"] {
         int id PK
         int applicant_id FK
         int intake_document_id FK
         int lease_station_id FK
+        int uploaded_by FK
         IntakeDocType declared_type
         ApplicantSubmissionStatus status
     }
@@ -659,13 +705,48 @@ classDiagram
         DATA_REVIEWED = data_reviewed
         LINKED = linked
     }
+    class ReferenceLabel {
+        <<enumeration>>
+        GENUINE_SAMPLE = genuine_sample
+        ALTERED_SAMPLE = altered_sample
+        OTHER = other
+    }
+    class ReferenceStatus {
+        <<enumeration>>
+        QUEUED = queued
+        PROCESSING = processing
+        PENDING = pending
+        APPROVED = approved
+        RETIRED = retired
+        FAILED = failed
+    }
+    class ReferenceUse {
+        <<enumeration>>
+        TRAINING = training
+        HELD_OUT = held_out
+    }
+    class SecondPassStatus {
+        <<enumeration>>
+        QUEUED = queued
+        PROCESSING = processing
+        DONE = done
+        FAILED = failed
+    }
     class ScanStation
     class Student
     class User
     ApplicantPage "*" --> "1" ApplicantSubmission : submission_id
+    ApplicantReference "*" --> "1" User : created_by
+    ApplicantReference "*" --> "0..1" User : decided_by
+    ApplicantReference "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantReference "*" --> "0..1" ApplicantReference : replaces_id
+    ApplicantSecondPass "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantSecondPass "*" --> "0..1" User : queued_by
+    ApplicantSecondPass "0..1" --> "1" ApplicantSubmission : submission_id
     ApplicantSubmission "*" --> "1" User : applicant_id
     ApplicantSubmission "*" --> "0..1" IntakeDocument : intake_document_id
     ApplicantSubmission "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantSubmission "*" --> "0..1" User : uploaded_by
     IntakeBatch "*" --> "1" ScanStation : station_id
     IntakeDocument "*" --> "0..1" IntakeBatch : batch_id
     IntakeDocument "*" --> "0..1" User : fields_reviewed_by
@@ -675,6 +756,11 @@ classDiagram
     IntakeDocument "*" --> "0..1" Student : student_id
     IntakeDocument "*" --> "0..1" ApplicantSubmission : submission_id
     IntakeSettings "*" --> "0..1" User : updated_by
+    ApplicantReference ..> IntakeDocType
+    ApplicantReference ..> ReferenceLabel
+    ApplicantReference ..> ReferenceStatus
+    ApplicantReference ..> ReferenceUse
+    ApplicantSecondPass ..> SecondPassStatus
     ApplicantSubmission ..> ApplicantSubmissionStatus
     ApplicantSubmission ..> IntakeDocType
     IntakeDocument ..> IntakeDecision

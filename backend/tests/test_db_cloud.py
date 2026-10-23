@@ -178,6 +178,13 @@ def test_supabase_data_api_lockdown_keeps_the_app_login_working():
             conn.execute(text(
                 "INSERT INTO mechanism_station_states (station_id, remote_allowed) "
                 "SELECT id, false FROM scan_stations"))
+            # applicant intake phase 2 (d3f8a6c2e9b4): reference samples (also locked down:
+            # applicant_second_passes, student_advisers; see rls_off above)
+            conn.execute(text(
+                "INSERT INTO applicant_references (issuing_school, school_key, doc_type, label, "
+                "use, version, status, rules, page_keys, attempts, created_by) SELECT "
+                "'Sample College', 'sample college', 'TRANSCRIPT_OF_RECORDS', 'GENUINE_SAMPLE', "
+                "'TRAINING', 1, 'QUEUED', '{}', '[]', 0, id FROM users"))
         with app_engine.connect() as conn:
             for _ in range(3):  # repeated statements: nothing prepared server-side
                 assert conn.scalar(text("SELECT count(*) FROM users")) == 1
@@ -186,6 +193,7 @@ def test_supabase_data_api_lockdown_keeps_the_app_login_working():
             assert conn.scalar(text("SELECT count(*) FROM intake_settings")) == 1
             assert conn.scalar(text("SELECT count(*) FROM mechanism_commands")) == 1
             assert conn.scalar(text("SELECT count(*) FROM mechanism_station_states")) == 1
+            assert conn.scalar(text("SELECT count(*) FROM applicant_references")) == 1
         for forbidden in ("UPDATE audit_logs SET action = 'x'", "DELETE FROM audit_logs",
                           "SELECT * FROM alembic_version", "CREATE TABLE app_ddl (id int)"):
             with app_engine.connect() as conn, pytest.raises(ProgrammingError):

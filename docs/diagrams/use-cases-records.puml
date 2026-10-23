@@ -27,6 +27,7 @@ actor "Student" as Student
 actor "Teacher" as Teacher
 actor "Class adviser" as Adviser
 actor "Registrar" as Registrar
+actor "Administrator" as Admin
 
 Adviser -up-|> Teacher
 
@@ -60,6 +61,12 @@ rectangle "DocuSense" {
     ' @routes R_ENROLL: POST /api/enrollments | POST /api/sections/{section_id}/enroll | POST /api/enrollments/{enrollment_id}/drop
     usecase "Assign class advisers\n(one per block section)" as R_ADVISERS
     ' @routes R_ADVISERS: GET /api/section-advisers | PUT /api/section-advisers
+    usecase "Assign a student's adviser\n(one teacher per student\nand term, with a reason)" as R_STUDENT_ADVISERS
+    ' @routes R_STUDENT_ADVISERS: GET /api/student-advisers | PUT /api/student-advisers | GET /api/student-advisers/options
+    usecase "View own adviser" as R_MY_ADVISER
+    ' @routes R_MY_ADVISER: GET /api/students/me/advisers
+    usecase "View own advisees\n(assigned students only)" as R_ADVISEES
+    ' @routes R_ADVISEES: GET /api/advisees
   }
 }
 
@@ -81,6 +88,10 @@ Registrar -- R_TEACHERS
 Registrar -- R_SECTIONS
 Registrar -- R_ENROLL
 Registrar -- R_ADVISERS
+Registrar -- R_STUDENT_ADVISERS
+Admin -- R_STUDENT_ADVISERS
+Student -- R_MY_ADVISER
+Teacher -- R_ADVISEES
 
 
 note "Teachers see only their own sections;\nstudents only their own records.\nRegistrar edits to official records need a reason." as N1

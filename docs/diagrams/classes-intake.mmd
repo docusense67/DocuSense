@@ -7,11 +7,36 @@ classDiagram
         int id PK
         int submission_id FK
     }
+    class ApplicantReference["ApplicantReference (applicant_references)"] {
+        int id PK
+        int created_by FK
+        int decided_by FK
+        int lease_station_id FK
+        int replaces_id FK
+        IntakeDocType doc_type
+        str issuing_school
+        ReferenceLabel label
+        json reading
+        json rules
+        ReferenceStatus status
+        ReferenceUse use
+        int version
+    }
+    class ApplicantSecondPass["ApplicantSecondPass (applicant_second_passes)"] {
+        int id PK
+        int lease_station_id FK
+        int queued_by FK
+        int submission_id FK,UK
+        json disagreements
+        json reading
+        SecondPassStatus status
+    }
     class ApplicantSubmission["ApplicantSubmission (applicant_submissions)"] {
         int id PK
         int applicant_id FK
         int intake_document_id FK
         int lease_station_id FK
+        int uploaded_by FK
         IntakeDocType declared_type
         ApplicantSubmissionStatus status
     }
@@ -92,13 +117,48 @@ classDiagram
         DATA_REVIEWED = data_reviewed
         LINKED = linked
     }
+    class ReferenceLabel {
+        <<enumeration>>
+        GENUINE_SAMPLE = genuine_sample
+        ALTERED_SAMPLE = altered_sample
+        OTHER = other
+    }
+    class ReferenceStatus {
+        <<enumeration>>
+        QUEUED = queued
+        PROCESSING = processing
+        PENDING = pending
+        APPROVED = approved
+        RETIRED = retired
+        FAILED = failed
+    }
+    class ReferenceUse {
+        <<enumeration>>
+        TRAINING = training
+        HELD_OUT = held_out
+    }
+    class SecondPassStatus {
+        <<enumeration>>
+        QUEUED = queued
+        PROCESSING = processing
+        DONE = done
+        FAILED = failed
+    }
     class ScanStation
     class Student
     class User
     ApplicantPage "*" --> "1" ApplicantSubmission : submission_id
+    ApplicantReference "*" --> "1" User : created_by
+    ApplicantReference "*" --> "0..1" User : decided_by
+    ApplicantReference "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantReference "*" --> "0..1" ApplicantReference : replaces_id
+    ApplicantSecondPass "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantSecondPass "*" --> "0..1" User : queued_by
+    ApplicantSecondPass "0..1" --> "1" ApplicantSubmission : submission_id
     ApplicantSubmission "*" --> "1" User : applicant_id
     ApplicantSubmission "*" --> "0..1" IntakeDocument : intake_document_id
     ApplicantSubmission "*" --> "0..1" ScanStation : lease_station_id
+    ApplicantSubmission "*" --> "0..1" User : uploaded_by
     IntakeBatch "*" --> "1" ScanStation : station_id
     IntakeDocument "*" --> "0..1" IntakeBatch : batch_id
     IntakeDocument "*" --> "0..1" User : fields_reviewed_by
@@ -108,6 +168,11 @@ classDiagram
     IntakeDocument "*" --> "0..1" Student : student_id
     IntakeDocument "*" --> "0..1" ApplicantSubmission : submission_id
     IntakeSettings "*" --> "0..1" User : updated_by
+    ApplicantReference ..> IntakeDocType
+    ApplicantReference ..> ReferenceLabel
+    ApplicantReference ..> ReferenceStatus
+    ApplicantReference ..> ReferenceUse
+    ApplicantSecondPass ..> SecondPassStatus
     ApplicantSubmission ..> ApplicantSubmissionStatus
     ApplicantSubmission ..> IntakeDocType
     IntakeDocument ..> IntakeDecision
